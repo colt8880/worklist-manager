@@ -9,7 +9,7 @@ import {
   Paper 
 } from '@mui/material';
 import { CloudUpload } from '@mui/icons-material';
-import Papa from 'papaparse';
+import Papa, { ParseResult } from 'papaparse';
 
 interface FileUploadProps {
   onFileUpload: (data: any[]) => void;
@@ -22,52 +22,90 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload }) => {
 
   const handleFileUpload = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      setError('No file selected');
+      return;
+    }
 
     setUploading(true);
     setError(null);
     setProgress(0);
+    console.log('Starting to parse file:', file.name);
 
-    // Validate file size (max 100MB)
-    if (file.size > 100 * 1024 * 1024) {
-      setError('File size exceeds 100MB limit');
-      setUploading(false);
-      return;
-    }
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: 'greedy',
+      complete: (results: ParseResult<any>) => {
+        console.log('Parse complete. Results:', results);
+        console.log('Data:', results.data);
+        console.log('Errors:', results.errors);
+        console.log('Meta:', results.meta);
 
-    try {
-      Papa.parse(file, {
-        header: true,
-        dynamicTyping: true,
-        skipEmptyLines: true,
-        complete: (results) => {
-          if (results.errors.length > 0) {
-            setError('Error parsing CSV file');
-            console.error('Parse errors:', results.errors);
-          } else {
-            onFileUpload(results.data);
-          }
+        if (results.errors.length > 0) {
+          console.error('Parse errors:', results.errors);
+          setError(`Error parsing CSV file: ${results.errors[0].message}`);
           setUploading(false);
-          setProgress(100);
-        },
-        error: (error) => {
-          setError(`Error reading file: ${error.message}`);
-          setUploading(false);
-        },
-        step: (results, parser) => {
-          // Update progress based on rows processed
-          const progress = Math.round((results.meta.cursor / file.size) * 100);
-          setProgress(Math.min(progress, 99)); // Cap at 99% until complete
+          return;
         }
-      });
-    } catch (err) {
-      setError('Error processing file');
-      setUploading(false);
-    }
+
+        if (!results.data || results.data.length === 0) {
+          console.error('No data found in parsed results');
+          setError('No data found in file');
+          setUploading(false);
+          return;
+        }
+
+        console.log('First row of data:', results.data[0]);
+        console.log('Number of rows:', results.data.length);
+        console.log('Fields:', results.meta.fields);
+
+        onFileUpload(results.data);
+        setUploading(false);
+        setProgress(100);
+      },
+      error: (error: any) => {
+        console.error('Papa parse error:', error);
+        setError(`Error reading file: ${error.message}`);
+        setUploading(false);
+      },
+      beforeFirstChunk: (chunk: string) => {
+        console.log('First chunk of file:', chunk);
+        return chunk;
+      }
+    });
   }, [onFileUpload]);
 
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const files = event.dataTransfer.files;
+    if (files.length) {
+      const fakeEvent = {
+        target: {
+          files: files
+        }
+      } as unknown as React.ChangeEvent<HTMLInputElement>;
+      handleFileUpload(fakeEvent);
+    }
+  };
+
   return (
-    <Paper sx={{ p: 3, textAlign: 'center' }}>
+    <Paper 
+      sx={{ 
+        p: 3, 
+        textAlign: 'center',
+        border: '2px dashed #ccc',
+        backgroundColor: '#fafafa'
+      }}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
       <Box sx={{ mb: 2 }}>
         <input
           accept=".csv"
@@ -86,6 +124,9 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload }) => {
             Upload CSV File
           </Button>
         </label>
+        <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
+          Drag and drop a CSV file here or click to select
+        </Typography>
       </Box>
 
       {uploading && (
