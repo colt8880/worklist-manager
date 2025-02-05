@@ -30,7 +30,9 @@ const App: React.FC = () => {
     updateProjectData,
     clearData,
     setCurrentProject,
-    editProject
+    editProject,
+    setProjects,
+    setColumns
   } = useProjects(user?.username);
   const [isNewProjectDialogOpen, setIsNewProjectDialogOpen] = useState(false);
 
@@ -71,10 +73,26 @@ const App: React.FC = () => {
             <ProjectContent
               data={data}
               columns={columns}
-              onDataUpdate={(newData, newColumns) => {
-                updateProjectData(newData, newColumns);
-              }}
+              onDataUpdate={updateProjectData}
               onClearData={clearData}
+              customColumns={currentProject?.customColumns || {}}
+              onAddCustomColumn={(column) => {
+                if (currentProject) {
+                  const updatedProject = {
+                    ...currentProject,
+                    customColumns: { ...currentProject.customColumns, [column.name]: column },
+                    columns: [...currentProject.columns, column.name]
+                  };
+                  setCurrentProject(updatedProject);
+                  setColumns([...columns, column.name]);
+                  setProjects(prev => prev.map(p => p.id === currentProject.id ? updatedProject : p));
+                }
+              }}
+              onUpdateData={(newData) => {
+                if (currentProject) {
+                  updateProjectData(newData, columns);
+                }
+              }}
             />
           )}
         </Paper>

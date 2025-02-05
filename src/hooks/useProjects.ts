@@ -11,6 +11,7 @@ const mockProjects: Project[] = [
     updatedAt: new Date().toISOString(),
     data: [],
     columns: [],
+    customColumns: {},
     userId: 'admin'
   }
 ];
@@ -37,6 +38,7 @@ export const useProjects = (userId: string | undefined) => {
       updatedAt: new Date().toISOString(),
       data: [],
       columns: [],
+      customColumns: {},
       userId: userId || ''
     };
     setProjects(prev => [...prev, newProject]);
@@ -110,5 +112,7 @@ export const useProjects = (userId: string | undefined) => {
     clearData,
     setCurrentProject,
     editProject,
+    setProjects,
+    setColumns
   };
 }; 
