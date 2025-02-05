@@ -85,6 +85,19 @@ export const useProjects = (userId: string | undefined) => {
     setColumns([]);
   };
 
+  const editProject = (projectId: string, newName: string) => {
+    const updatedProjects = projects.map(project => 
+      project.id === projectId
+        ? { ...project, name: newName, updatedAt: new Date().toISOString() }
+        : project
+    );
+    setProjects(updatedProjects);
+    
+    if (currentProject?.id === projectId) {
+      setCurrentProject({ ...currentProject, name: newName });
+    }
+  };
+
   return {
     projects,
     currentProject,
@@ -95,6 +108,7 @@ export const useProjects = (userId: string | undefined) => {
     openProject,
     updateProjectData,
     clearData,
-    setCurrentProject
+    setCurrentProject,
+    editProject,
   };
 }; 

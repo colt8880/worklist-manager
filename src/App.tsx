@@ -29,7 +29,8 @@ const App: React.FC = () => {
     openProject,
     updateProjectData,
     clearData,
-    setCurrentProject
+    setCurrentProject,
+    editProject
   } = useProjects(user?.username);
   const [isNewProjectDialogOpen, setIsNewProjectDialogOpen] = useState(false);
 
@@ -64,6 +65,7 @@ const App: React.FC = () => {
               onNewProject={() => setIsNewProjectDialogOpen(true)}
               onOpenProject={openProject}
               onDeleteProject={deleteProject}
+              onEditProject={editProject}
             />
           ) : (
             <ProjectContent

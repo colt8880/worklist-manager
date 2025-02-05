@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Paper,
@@ -12,13 +12,16 @@ import {
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
 import { ProjectSummary } from '../types/project';
+import { EditProjectDialog } from './EditProjectDialog';
 
 interface ProjectsProps {
   projects: ProjectSummary[];
   onNewProject: () => void;
   onOpenProject: (projectId: string) => void;
   onDeleteProject: (projectId: string) => void;
+  onEditProject: (projectId: string, newName: string) => void;
 }
 
 export const Projects: React.FC<ProjectsProps> = ({
@@ -26,7 +29,10 @@ export const Projects: React.FC<ProjectsProps> = ({
   onNewProject,
   onOpenProject,
   onDeleteProject,
+  onEditProject,
 }) => {
+  const [editingProject, setEditingProject] = useState<ProjectSummary | null>(null);
+
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 4 }}>
@@ -51,13 +57,21 @@ export const Projects: React.FC<ProjectsProps> = ({
                   <Typography variant="h6" component="h3" gutterBottom>
                     {project.name}
                   </Typography>
-                  <IconButton 
-                    onClick={() => onDeleteProject(project.id)}
-                    size="small"
-                    color="error"
-                  >
-                    <DeleteIcon />
-                  </IconButton>
+                  <Box>
+                    <IconButton
+                      onClick={() => setEditingProject(project)}
+                      size="small"
+                    >
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton
+                      onClick={() => onDeleteProject(project.id)}
+                      size="small"
+                      color="error"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Box>
                 </Box>
                 <Typography variant="body2" color="text.secondary">
                   {project.recordCount} records
@@ -78,6 +92,18 @@ export const Projects: React.FC<ProjectsProps> = ({
           </Grid>
         ))}
       </Grid>
+
+      <EditProjectDialog
+        open={!!editingProject}
+        onClose={() => setEditingProject(null)}
+        onSave={(newName) => {
+          if (editingProject) {
+            onEditProject(editingProject.id, newName);
+          }
+          setEditingProject(null);
+        }}
+        initialName={editingProject?.name || ''}
+      />
 
       {projects.length === 0 && (
         <Paper sx={{ p: 4, textAlign: 'center' }}>
