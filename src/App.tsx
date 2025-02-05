@@ -3,30 +3,26 @@ import React, { useState } from 'react';
 import { 
   Container, 
   Paper, 
-  Stepper, 
-  Step, 
-  StepLabel, 
   Typography,
   Box,
-  Alert
+  Alert,
+  Button,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow
 } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import FileUpload from './components/FileUpload';
+import FilterAltIcon from '@mui/icons-material/FilterAlt';
 
-// Define interfaces for our data types
-interface Task {
-  id?: string;
-  title: string;
-  status: 'pending' | 'inProgress' | 'completed';
-  assignedTo?: string;
-  priority?: 'high' | 'medium' | 'low';
-}
-
-interface UploadedData {
+// Define a dynamic type for our data
+type DynamicData = {
   [key: string]: any;
 }
 
-// Create theme
 const theme = createTheme({
   palette: {
     primary: {
@@ -38,46 +34,44 @@ const theme = createTheme({
   },
 });
 
-// Define the steps for our workflow
-const WORKFLOW_STEPS = [
-  'Upload Dataset',
-  'Filter Data',
-  'View & Assign Tasks',
-  'Update Status',
-  'Generate Reports'
-] as const;
-
 const App: React.FC = () => {
   // State management
-  const [activeStep, setActiveStep] = useState(0);
-  const [uploadedData, setUploadedData] = useState<UploadedData[]>([]);
+  const [data, setData] = useState<DynamicData[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [columns, setColumns] = useState<string[]>([]);
 
   // Handle file upload
-  const handleFileUpload = (data: UploadedData[]) => {
+  const handleFileUpload = (uploadedData: DynamicData[]) => {
     try {
-      // Basic validation
-      if (!Array.isArray(data) || data.length === 0) {
+      if (!Array.isArray(uploadedData) || uploadedData.length === 0) {
         throw new Error('No data found in the uploaded file');
       }
 
-      const firstRow = data[0];
-      if (!firstRow || Object.keys(firstRow).length === 0) {
-        throw new Error('Invalid data structure in file');
+      // Get columns from the first row
+      const detectedColumns = Object.keys(uploadedData[0]);
+
+      if (detectedColumns.length === 0) {
+        throw new Error('No columns detected in the file');
       }
 
-      // Store the data and move to next step
-      setUploadedData(data);
+      // Store the data and columns
+      setColumns(detectedColumns);
+      setData(uploadedData);
       setError(null);
-      setSuccess(`Successfully loaded ${data.length} records`);
-      setActiveStep(1);
+      setSuccess(`Successfully loaded ${uploadedData.length} records`);
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to process file');
-      setUploadedData([]);
+      setData([]);
+      setColumns([]);
       setSuccess(null);
     }
+  };
+
+  const handleFilterClick = () => {
+    // To be implemented
+    console.log('Filter button clicked');
   };
 
   return (
@@ -89,50 +83,75 @@ const App: React.FC = () => {
             Worklist Manager
           </Typography>
           
-          {/* Stepper */}
-          <Box sx={{ width: '100%', mb: 4 }}>
-            <Stepper activeStep={activeStep} alternativeLabel>
-              {WORKFLOW_STEPS.map((label) => (
-                <Step key={label}>
-                  <StepLabel>{label}</StepLabel>
-                </Step>
-              ))}
-            </Stepper>
-          </Box>
+          {/* Error Message */}
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
 
-          {/* Main Content Area */}
-          <Box sx={{ mt: 4 }}>
-            <Typography variant="h6" gutterBottom>
-              {WORKFLOW_STEPS[activeStep]}
-            </Typography>
-            
-            {/* Error Message */}
-            {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
-                {error}
-              </Alert>
-            )}
+          {/* Success Message */}
+          {success && (
+            <Alert severity="success" sx={{ mb: 2 }}>
+              {success}
+            </Alert>
+          )}
 
-            {/* Success Message */}
-            {success && (
-              <Alert severity="success" sx={{ mb: 2 }}>
-                {success}
-              </Alert>
-            )}
-
-            {/* Step Content */}
-            {activeStep === 0 && (
-              <FileUpload onFileUpload={handleFileUpload} />
-            )}
-
-            {activeStep === 1 && uploadedData.length > 0 && (
-              <Box sx={{ mt: 2 }}>
-                <Typography color="textSecondary">
-                  Ready to proceed with data filtering
-                </Typography>
+          {/* Main Content */}
+          {data.length === 0 ? (
+            <FileUpload onFileUpload={handleFileUpload} />
+          ) : (
+            <>
+              {/* Tools Section */}
+              <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Button
+                  variant="contained"
+                  startIcon={<FilterAltIcon />}
+                  onClick={handleFilterClick}
+                >
+                  Filter Data
+                </Button>
+                <Button
+                  variant="outlined"
+                  onClick={() => {
+                    setData([]);
+                    setColumns([]);
+                    setSuccess(null);
+                  }}
+                >
+                  Upload New File
+                </Button>
               </Box>
-            )}
-          </Box>
+
+              {/* Data Table */}
+              <TableContainer>
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      {columns.map((column) => (
+                        <TableCell key={column}>{column}</TableCell>
+                      ))}
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {data.slice(0, 10).map((row, index) => (
+                      <TableRow key={index}>
+                        {columns.map((column) => (
+                          <TableCell key={column}>{row[column]}</TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              
+              {data.length > 10 && (
+                <Typography variant="caption" sx={{ mt: 2, display: 'block' }}>
+                  Showing first 10 records. Total: {data.length} records
+                </Typography>
+              )}
+            </>
+          )}
         </Paper>
       </Container>
     </ThemeProvider>
