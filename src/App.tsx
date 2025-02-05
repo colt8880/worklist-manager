@@ -7,55 +7,38 @@ import {
   Box,
   Alert,
   Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow
 } from '@mui/material';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import FileUpload from './components/FileUpload';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
-
-// Define a dynamic type for our data
-type DynamicData = {
-  [key: string]: any;
-}
+import FileUpload from './components/FileUpload';
+import { DataTable } from './components/DataTable';
+import { DataRecord } from './types';
 
 const theme = createTheme({
   palette: {
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
+    primary: { main: '#1976d2' },
+    secondary: { main: '#dc004e' },
   },
 });
 
 const App: React.FC = () => {
-  // State management
-  const [data, setData] = useState<DynamicData[]>([]);
+  const [data, setData] = useState<DataRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [columns, setColumns] = useState<string[]>([]);
 
-  // Handle file upload
-  const handleFileUpload = (uploadedData: DynamicData[]) => {
+  const handleFileUpload = (uploadedData: DataRecord[]) => {
     try {
       if (!Array.isArray(uploadedData) || uploadedData.length === 0) {
         throw new Error('No data found in the uploaded file');
       }
 
-      // Get columns from the first row
       const detectedColumns = Object.keys(uploadedData[0]);
 
       if (detectedColumns.length === 0) {
         throw new Error('No columns detected in the file');
       }
 
-      // Store the data and columns
       setColumns(detectedColumns);
       setData(uploadedData);
       setError(null);
@@ -70,7 +53,6 @@ const App: React.FC = () => {
   };
 
   const handleFilterClick = () => {
-    // To be implemented
     console.log('Filter button clicked');
   };
 
@@ -123,33 +105,8 @@ const App: React.FC = () => {
                 </Button>
               </Box>
 
-              {/* Data Table */}
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      {columns.map((column) => (
-                        <TableCell key={column}>{column}</TableCell>
-                      ))}
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {data.slice(0, 10).map((row, index) => (
-                      <TableRow key={index}>
-                        {columns.map((column) => (
-                          <TableCell key={column}>{row[column]}</TableCell>
-                        ))}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-              
-              {data.length > 10 && (
-                <Typography variant="caption" sx={{ mt: 2, display: 'block' }}>
-                  Showing first 10 records. Total: {data.length} records
-                </Typography>
-              )}
+              {/* Virtualized Table */}
+              <DataTable data={data} columns={columns} />
             </>
           )}
         </Paper>
