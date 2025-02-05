@@ -10,6 +10,7 @@ const MAX_COLUMN_WIDTH = 400;
 const PADDING = 32;
 const CHAR_WIDTH = 8;
 const HEADER_CHAR_WIDTH = 10;
+const PLACEHOLDER_COLUMN_WIDTH = 200; // Width for each placeholder column
 
 const styles = {
   row: {
@@ -94,45 +95,72 @@ export const DataTable: React.FC<DataTableProps> = ({ data, columns }) => {
     [columns, columnWidths]
   );
 
-  return (
-    <Box sx={{ height: '600px', width: '100%', overflow: 'auto' }}>
-      <div style={{ ...styles.container, width: `${totalWidth}px` }}>
-        <div style={styles.header}>
-          {columns.map((column) => (
-            <div
-              key={column}
-              style={{
-                ...styles.cell,
-                width: `${columnWidths[column]}px`,
-                fontWeight: 'bold',
-              }}
-            >
-              {column}
-            </div>
-          ))}
-        </div>
+  const getPlaceholderColumns = (containerWidth: number) => {
+    if (totalWidth >= containerWidth) return [];
+    const numPlaceholders = Math.ceil((containerWidth - totalWidth) / PLACEHOLDER_COLUMN_WIDTH);
+    return Array(numPlaceholders).fill('').map((_, i) => `__placeholder_${i}`);
+  };
 
-        <AutoSizer disableHeight>
-          {({ width }: { width: number }) => (
-            <List
-              height={550}
-              itemCount={data.length}
-              itemSize={ROW_HEIGHT}
-              width={width}
-            >
-              {(props) => (
-                <TableRow
-                  {...props}
-                  data={data}
-                  columns={columns}
-                  columnWidths={columnWidths}
-                  totalWidth={totalWidth}
-                />
-              )}
-            </List>
-          )}
-        </AutoSizer>
-      </div>
+  const getColumnData = (containerWidth: number) => {
+    const placeholderColumns = getPlaceholderColumns(containerWidth);
+    const allColumns = [...columns, ...placeholderColumns];
+    const allColumnWidths = {
+      ...columnWidths,
+      ...Object.fromEntries(placeholderColumns.map(col => [col, PLACEHOLDER_COLUMN_WIDTH]))
+    };
+    const effectiveTotalWidth = Math.max(containerWidth, totalWidth);
+
+    return { allColumns, allColumnWidths, effectiveTotalWidth, placeholderColumns };
+  };
+
+  return (
+    <Box sx={{ height: '600px', width: '100%'}}>
+      <AutoSizer>
+        {({ width: containerWidth }: { width: number }) => {
+          const { allColumns, allColumnWidths, effectiveTotalWidth, placeholderColumns } = 
+            getColumnData(containerWidth);
+
+          return (
+            <div style={{ ...styles.container, width: `${effectiveTotalWidth}px` }}>
+              <div style={styles.header}>
+                {allColumns.map((column) => (
+                  <div
+                    key={column}
+                    style={{
+                      ...styles.cell,
+                      width: `${allColumnWidths[column]}px`,
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    {placeholderColumns.includes(column) ? '' : column}
+                  </div>
+                ))}
+              </div>
+
+              <AutoSizer disableHeight>
+                {({ width }: { width: number }) => (
+                  <List
+                    height={550}
+                    itemCount={data.length}
+                    itemSize={ROW_HEIGHT}
+                    width={width}
+                  >
+                    {(props) => (
+                      <TableRow
+                        {...props}
+                        data={data}
+                        columns={allColumns}
+                        columnWidths={allColumnWidths}
+                        totalWidth={effectiveTotalWidth}
+                      />
+                    )}
+                  </List>
+                )}
+              </AutoSizer>
+            </div>
+          );
+        }}
+      </AutoSizer>
     </Box>
   );
 }; 
