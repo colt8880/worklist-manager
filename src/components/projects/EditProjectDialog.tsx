@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -12,16 +12,20 @@ interface EditProjectDialogProps {
   open: boolean;
   onClose: () => void;
   onSave: (name: string) => void;
-  initialName: string;
+  currentName: string;
 }
 
 export const EditProjectDialog: React.FC<EditProjectDialogProps> = ({
   open,
   onClose,
   onSave,
-  initialName,
+  currentName,
 }) => {
-  const [name, setName] = useState(initialName);
+  const [name, setName] = useState(currentName);
+
+  useEffect(() => {
+    setName(currentName);
+  }, [currentName]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,13 +46,12 @@ export const EditProjectDialog: React.FC<EditProjectDialogProps> = ({
             label="Project Name"
             fullWidth
             value={name}
-            placeholder={initialName}
             onChange={(e) => setName(e.target.value)}
           />
         </DialogContent>
         <DialogActions>
           <Button onClick={onClose}>Cancel</Button>
-          <Button type="submit" disabled={!name.trim()}>
+          <Button type="submit" variant="contained" disabled={!name.trim()}>
             Save
           </Button>
         </DialogActions>

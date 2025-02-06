@@ -1,4 +1,3 @@
-// src/components/FileUpload.tsx
 import React, { useState, useCallback } from 'react';
 import { 
   Box, 
@@ -9,10 +8,11 @@ import {
   Paper 
 } from '@mui/material';
 import { CloudUpload } from '@mui/icons-material';
-import Papa, { ParseResult } from 'papaparse';
+import Papa from 'papaparse';
+import { DataRecord } from '../../types/datatable';
 
 interface FileUploadProps {
-  onFileUpload: (data: any[]) => void;
+  onFileUpload: (data: DataRecord[]) => void;
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload }) => {
@@ -30,81 +30,47 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload }) => {
     setUploading(true);
     setError(null);
     setProgress(0);
-    console.log('Starting to parse file:', file.name);
 
     Papa.parse(file, {
       header: true,
       skipEmptyLines: 'greedy',
-      complete: (results: ParseResult<any>) => {
-        console.log('Parse complete. Results:', results);
-        console.log('Data:', results.data);
-        console.log('Errors:', results.errors);
-        console.log('Meta:', results.meta);
-
+      complete: (results) => {
         if (results.errors.length > 0) {
-          console.error('Parse errors:', results.errors);
           setError(`Error parsing CSV file: ${results.errors[0].message}`);
           setUploading(false);
           return;
         }
 
         if (!results.data || results.data.length === 0) {
-          console.error('No data found in parsed results');
           setError('No data found in file');
           setUploading(false);
           return;
         }
 
-        console.log('First row of data:', results.data[0]);
-        console.log('Number of rows:', results.data.length);
-        console.log('Fields:', results.meta.fields);
-
-        onFileUpload(results.data);
+        onFileUpload(results.data as DataRecord[]);
         setUploading(false);
         setProgress(100);
       },
-      error: (error: any) => {
-        console.error('Papa parse error:', error);
+      error: (error) => {
         setError(`Error reading file: ${error.message}`);
         setUploading(false);
-      },
-      beforeFirstChunk: (chunk: string) => {
-        console.log('First chunk of file:', chunk);
-        return chunk;
       }
     });
   }, [onFileUpload]);
 
-  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-  };
-
-  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-    
-    const files = event.dataTransfer.files;
-    if (files.length) {
-      const fakeEvent = {
-        target: {
-          files: files
-        }
-      } as unknown as React.ChangeEvent<HTMLInputElement>;
-      handleFileUpload(fakeEvent);
-    }
-  };
-
   return (
     <Paper 
       sx={{ 
-        p: 3, 
+        p: 4, 
         textAlign: 'center',
-        border: '2px dashed #ccc',
-        backgroundColor: '#fafafa'
+        border: '2px dashed rgba(132, 172, 206, 0.3)',
+        backgroundColor: 'rgba(132, 172, 206, 0.05)',
+        transition: 'all 0.2s ease',
+        '&:hover': {
+          borderColor: '#1AA962',
+          backgroundColor: 'rgba(26, 169, 98, 0.05)',
+        }
       }}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
     >
       <Box sx={{ mb: 2 }}>
         <input
@@ -120,6 +86,12 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload }) => {
             component="span"
             startIcon={<CloudUpload />}
             disabled={uploading}
+            sx={{
+              backgroundColor: '#1AA962',
+              '&:hover': {
+                backgroundColor: '#158c51',
+              }
+            }}
           >
             Upload CSV File
           </Button>
@@ -147,4 +119,4 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload }) => {
   );
 };
 
-export default FileUpload;
+export default FileUpload; 

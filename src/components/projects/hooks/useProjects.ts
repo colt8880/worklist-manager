@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Project, ProjectSummary } from '../types/project';
-import { DataRecord } from '../types';
+import { Project, ProjectSummary } from '../../../types/project';
+import { DataRecord } from '../../../types';
 
 // Mock project data - replace with API calls in production
 const mockProjects: Project[] = [

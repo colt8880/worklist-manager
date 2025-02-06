@@ -17,13 +17,15 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
   customColumn,
   onUpdateCell,
 }) => {
-  if (!customColumn) return value;
+  if (!customColumn) {
+    return <span>{value}</span>;
+  }
 
   switch (customColumn.type) {
     case 'checkbox':
       return (
         <Checkbox
-          checked={!!value}
+          checked={Boolean(value)}
           onChange={(e) => onUpdateCell(rowIndex, column, e.target.checked)}
         />
       );
@@ -36,21 +38,20 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
           fullWidth
         >
           {customColumn.options?.map((option) => (
-            <MenuItem key={option} value={option}>{option}</MenuItem>
+            <MenuItem key={option} value={option}>
+              {option}
+            </MenuItem>
           ))}
         </Select>
       );
-    case 'text':
+    default:
       return (
         <TextField
           value={value || ''}
           onChange={(e) => onUpdateCell(rowIndex, column, e.target.value)}
           size="small"
           fullWidth
-          sx={{ '& .MuiInputBase-root': { height: '32px' }}}
         />
       );
-    default:
-      return value;
   }
 }; 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { User, LoginCredentials } from '../types/auth';
+import { User, LoginCredentials } from '../../../types/auth';
 
 const mockAuth = (credentials: LoginCredentials): Promise<User> => {
   return new Promise((resolve, reject) => {

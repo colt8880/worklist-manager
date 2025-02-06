@@ -1,12 +1,12 @@
 import { DataRecord } from './index';
 
-export type ColumnType = 'checkbox' | 'select' | 'text';
+export type ColumnType = 'text' | 'checkbox' | 'select';
 
 export interface CustomColumn {
   name: string;
   type: ColumnType;
-  helperText: string;
-  options?: string[];  // For select type columns
+  helperText?: string;
+  options?: string[];
 }
 
 export interface Project {
@@ -14,10 +14,10 @@ export interface Project {
   name: string;
   createdAt: string;
   updatedAt: string;
-  data: DataRecord[];
+  userId: string;
+  data: any[];
   columns: string[];
   customColumns: Record<string, CustomColumn>;
-  userId: string;
 }
 
 export interface ProjectSummary {

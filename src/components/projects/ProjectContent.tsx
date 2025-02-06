@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Box, Button, Typography, IconButton, Menu, MenuItem } from '@mui/material';
+import { Box, Typography, IconButton, Menu, MenuItem } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import { DataTable } from './DataTable/DataTable';
-import FileUpload from './FileUpload';
-import { DataRecord } from '../types';
+import FileUpload from '../common/FileUpload';
+import { DataTable } from '../data-table/DataTable';
+import { DataRecord } from '../../types/datatable';
 import { AddColumnDialog } from './AddColumnDialog';
-import { CustomColumn } from '../types/project';
+import { CustomColumn } from '../../types/project';
 
 interface ProjectContentProps {
   data: DataRecord[];
@@ -42,27 +42,11 @@ export const ProjectContent: React.FC<ProjectContentProps> = ({
     setAnchorEl(null);
   };
 
-  const handleUploadNewFile = () => {
-    handleMenuClose();
-    onClearData();
-  };
-
-  const handleAddColumn = (column: CustomColumn) => {
-    handleMenuClose();
-    onAddCustomColumn(column);
-  };
-
   const handleFileUpload = (uploadedData: DataRecord[]) => {
     if (uploadedData.length > 0) {
       const detectedColumns = Object.keys(uploadedData[0]);
       onDataUpdate(uploadedData, detectedColumns);
     }
-  };
-
-  const handleUpdateCell = (rowIndex: number, column: string, value: any) => {
-    const newData = [...data];
-    newData[rowIndex] = { ...newData[rowIndex], [column]: value };
-    onUpdateData(newData);
   };
 
   return (
@@ -94,7 +78,10 @@ export const ProjectContent: React.FC<ProjectContentProps> = ({
               }}>
                 Add Column
               </MenuItem>
-              <MenuItem onClick={handleUploadNewFile}>
+              <MenuItem onClick={() => {
+                handleMenuClose();
+                onClearData();
+              }}>
                 Upload New File
               </MenuItem>
             </Menu>
@@ -103,12 +90,16 @@ export const ProjectContent: React.FC<ProjectContentProps> = ({
             data={data}
             columns={columns}
             customColumns={customColumns}
-            onUpdateCell={handleUpdateCell}
+            onUpdateCell={(rowIndex, column, value) => {
+              const newData = [...data];
+              newData[rowIndex] = { ...newData[rowIndex], [column]: value };
+              onUpdateData(newData);
+            }}
           />
           <AddColumnDialog
             open={isAddColumnDialogOpen}
             onClose={() => setIsAddColumnDialogOpen(false)}
-            onAdd={handleAddColumn}
+            onAdd={onAddCustomColumn}
             existingColumns={columns}
           />
         </>

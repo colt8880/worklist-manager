@@ -1,0 +1,75 @@
+import React, { useState } from 'react';
+import { useProjects } from '../../contexts/useProjects';
+import { Projects } from './Projects';
+import { ProjectContent } from './ProjectContent';
+import { NewProjectDialog } from './NewProjectDialog';
+
+export const ProjectsView: React.FC = () => {
+  const {
+    projects,
+    currentProject,
+    data,
+    columns,
+    createProject,
+    deleteProject,
+    openProject: openProjectById,
+    updateProjectData,
+    clearData,
+    setCurrentProject,
+    editProject,
+    setProjects,
+    setColumns
+  } = useProjects();
+
+  const [isNewProjectDialogOpen, setIsNewProjectDialogOpen] = useState(false);
+
+  if (!currentProject) {
+    return (
+      <>
+        <Projects
+          projects={projects.map(p => ({
+            id: p.id,
+            name: p.name,
+            createdAt: p.createdAt,
+            updatedAt: p.updatedAt,
+            recordCount: p.data.length
+          }))}
+          onNewProject={() => setIsNewProjectDialogOpen(true)}
+          onOpenProject={openProjectById}
+          onDeleteProject={deleteProject}
+          onEditProject={editProject}
+        />
+        <NewProjectDialog
+          open={isNewProjectDialogOpen}
+          onClose={() => setIsNewProjectDialogOpen(false)}
+          onCreate={createProject}
+        />
+      </>
+    );
+  }
+
+  return (
+    <ProjectContent
+      data={data}
+      columns={columns}
+      onDataUpdate={updateProjectData}
+      onClearData={clearData}
+      customColumns={currentProject?.customColumns || {}}
+      onAddCustomColumn={(column) => {
+        const updatedProject = {
+          ...currentProject,
+          customColumns: { ...currentProject.customColumns, [column.name]: column },
+          columns: [...currentProject.columns, column.name]
+        };
+        setCurrentProject(updatedProject);
+        setColumns([...columns, column.name]);
+        setProjects(prev => prev.map(p => p.id === currentProject.id ? updatedProject : p));
+      }}
+      onUpdateData={(newData) => {
+        updateProjectData(newData, columns);
+      }}
+      currentProject={currentProject}
+      onBackToProjects={() => setCurrentProject(null)}
+    />
+  );
+}; 

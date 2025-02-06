@@ -30,13 +30,8 @@ export const NewProjectDialog: React.FC<NewProjectDialogProps> = ({
     }
   };
 
-  const handleClose = () => {
-    setName('');
-    onClose();
-  };
-
   return (
-    <Dialog open={open} onClose={handleClose}>
+    <Dialog open={open} onClose={onClose}>
       <form onSubmit={handleSubmit}>
         <DialogTitle>Create New Project</DialogTitle>
         <DialogContent>
@@ -50,8 +45,8 @@ export const NewProjectDialog: React.FC<NewProjectDialogProps> = ({
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose}>Cancel</Button>
-          <Button type="submit" disabled={!name.trim()}>
+          <Button onClick={onClose}>Cancel</Button>
+          <Button type="submit" variant="contained" disabled={!name.trim()}>
             Create
           </Button>
         </DialogActions>

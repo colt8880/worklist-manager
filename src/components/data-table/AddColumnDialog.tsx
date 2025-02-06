@@ -11,10 +11,8 @@ import {
   Select,
   MenuItem,
   Box,
-  FormHelperText,
-  TextareaAutosize,
 } from '@mui/material';
-import { ColumnType, CustomColumn } from '../types/project';
+import { ColumnType, CustomColumn } from '../../types/project';
 
 interface AddColumnDialogProps {
   open: boolean;
@@ -36,15 +34,6 @@ export const AddColumnDialog: React.FC<AddColumnDialogProps> = ({
     options: [],
   });
   const [optionsText, setOptionsText] = useState('');
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (column.name.trim() && !existingColumns.includes(column.name)) {
-      onAdd(column);
-      setColumn({ name: '', type: 'text', helperText: '', options: [] });
-      onClose();
-    }
-  };
 
   const handleSave = () => {
     if (column.name.trim() && !existingColumns.includes(column.name)) {

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Box, Typography, Button, IconButton, Menu, MenuItem } from '@mui/material';
+import { Box, Typography, IconButton, Menu, MenuItem } from '@mui/material';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import { User } from '../types/auth';
+import { User } from '../../types/auth';
 
 interface HeaderProps {
   user: User;
@@ -28,8 +28,24 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-      <Typography variant="h4" component="h1">
+    <Box sx={{ 
+      display: 'flex', 
+      justifyContent: 'space-between', 
+      alignItems: 'center', 
+      mb: 4,
+      pb: 3,
+      borderBottom: '1px solid',
+      borderColor: 'rgba(132, 172, 206, 0.2)',
+    }}>
+      <Typography 
+        variant="h4" 
+        component="h1" 
+        sx={{ 
+          color: '#264653',
+          fontWeight: 600,
+          letterSpacing: '-0.5px'
+        }}
+      >
         Worklist Manager
       </Typography>
       <Box>
