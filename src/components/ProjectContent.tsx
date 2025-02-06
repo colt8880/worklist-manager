@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Box, Button } from '@mui/material';
-import FilterAltIcon from '@mui/icons-material/FilterAlt';
-import { DataTable } from './DataTable';
+import { Box, Button, Typography, IconButton, Menu, MenuItem } from '@mui/material';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { DataTable } from './DataTable/DataTable';
 import FileUpload from './FileUpload';
 import { DataRecord } from '../types';
 import { AddColumnDialog } from './AddColumnDialog';
@@ -15,6 +16,8 @@ interface ProjectContentProps {
   customColumns: Record<string, CustomColumn>;
   onAddCustomColumn: (column: CustomColumn) => void;
   onUpdateData: (data: DataRecord[]) => void;
+  currentProject?: { name: string };
+  onBackToProjects: () => void;
 }
 
 export const ProjectContent: React.FC<ProjectContentProps> = ({
@@ -25,11 +28,28 @@ export const ProjectContent: React.FC<ProjectContentProps> = ({
   customColumns,
   onAddCustomColumn,
   onUpdateData,
+  currentProject,
+  onBackToProjects,
 }) => {
   const [isAddColumnDialogOpen, setIsAddColumnDialogOpen] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
-  const handleFilterClick = () => {
-    console.log('Filter button clicked');
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleUploadNewFile = () => {
+    handleMenuClose();
+    onClearData();
+  };
+
+  const handleAddColumn = (column: CustomColumn) => {
+    handleMenuClose();
+    onAddCustomColumn(column);
   };
 
   const handleFileUpload = (uploadedData: DataRecord[]) => {
@@ -37,10 +57,6 @@ export const ProjectContent: React.FC<ProjectContentProps> = ({
       const detectedColumns = Object.keys(uploadedData[0]);
       onDataUpdate(uploadedData, detectedColumns);
     }
-  };
-
-  const handleAddColumn = (column: CustomColumn) => {
-    onAddCustomColumn(column);
   };
 
   const handleUpdateCell = (rowIndex: number, column: string, value: any) => {
@@ -56,22 +72,37 @@ export const ProjectContent: React.FC<ProjectContentProps> = ({
       ) : (
         <>
           <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Button
-              variant="contained"
-              startIcon={<FilterAltIcon />}
-              onClick={handleFilterClick}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <IconButton onClick={onBackToProjects}>
+                <ArrowBackIcon />
+              </IconButton>
+              <Typography variant="h5" component="h2">
+                {currentProject?.name}
+              </Typography>
+            </Box>
+            <IconButton onClick={handleMenuOpen}>
+              <MoreVertIcon />
+            </IconButton>
+            <Menu
+              anchorEl={anchorEl}
+              open={Boolean(anchorEl)}
+              onClose={handleMenuClose}
             >
-              Filter Data
-            </Button>
-            <Button variant="outlined" onClick={onClearData}>
-              Upload New File
-            </Button>
+              <MenuItem onClick={() => {
+                handleMenuClose();
+                setIsAddColumnDialogOpen(true);
+              }}>
+                Add Column
+              </MenuItem>
+              <MenuItem onClick={handleUploadNewFile}>
+                Upload New File
+              </MenuItem>
+            </Menu>
           </Box>
           <DataTable
             data={data}
             columns={columns}
             customColumns={customColumns}
-            onAddColumn={() => setIsAddColumnDialogOpen(true)}
             onUpdateCell={handleUpdateCell}
           />
           <AddColumnDialog

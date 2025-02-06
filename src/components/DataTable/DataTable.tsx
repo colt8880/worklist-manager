@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react';
 import { Box, IconButton, Tooltip } from '@mui/material';
-import AddIcon from '@mui/icons-material/Add';
 import { DataTableProps } from '../../types/datatable';
 import { styles, CONSTANTS } from './styles';
 import { useColumnResize } from '../../hooks/useColumnResize';
@@ -12,7 +11,6 @@ export const DataTable: React.FC<DataTableProps> = ({
   data,
   columns,
   customColumns,
-  onAddColumn,
   onUpdateCell,
 }) => {
   const { customWidths, handleResizeStart, resizing } = useColumnResize();
@@ -20,13 +18,6 @@ export const DataTable: React.FC<DataTableProps> = ({
 
   return (
     <Box>
-      <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
-        <Tooltip title="Add Column">
-          <IconButton onClick={onAddColumn}>
-            <AddIcon />
-          </IconButton>
-        </Tooltip>
-      </Box>
       <TableContent
         data={data}
         columns={columns}

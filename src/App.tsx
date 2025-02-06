@@ -50,9 +50,7 @@ const App: React.FC = () => {
         <Paper sx={{ p: 4 }}>
           <Header
             user={user}
-            currentProject={currentProject}
             onLogout={logout}
-            onBackToProjects={() => setCurrentProject(null)}
           />
           
           {!currentProject ? (
@@ -93,6 +91,8 @@ const App: React.FC = () => {
                   updateProjectData(newData, columns);
                 }
               }}
+              currentProject={currentProject}
+              onBackToProjects={() => setCurrentProject(null)}
             />
           )}
         </Paper>

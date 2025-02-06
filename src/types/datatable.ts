@@ -18,7 +18,6 @@ export interface DataTableProps {
   data: DataRecord[];
   columns: string[];
   customColumns: Record<string, CustomColumn>;
-  onAddColumn: () => void;
   onUpdateCell: (rowIndex: number, column: string, value: any) => void;
 }
 
