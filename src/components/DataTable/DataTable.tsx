@@ -1,11 +1,15 @@
-import React, { useMemo, useState } from 'react';
-import { Box, IconButton, Tooltip } from '@mui/material';
-import { DataTableProps } from '../../types/datatable';
-import { styles, CONSTANTS } from './styles';
-import { useColumnResize } from '../../hooks/useColumnResize';
-import { useColumnWidths } from '../../hooks/useColumnWidths';
-import { TableHeader } from './TableHeader';
-import { TableContent } from './TableContent';
+import React from 'react';
+import { DataGrid, GridColDef, GridCellParams, GridRenderCellParams } from '@mui/x-data-grid';
+import { Checkbox, Select, MenuItem } from '@mui/material';
+import { DataRecord } from '../../types/datatable';
+import { CustomColumn } from '../../types/project';
+
+interface DataTableProps {
+  data: DataRecord[];
+  columns: string[];
+  customColumns: Record<string, CustomColumn>;
+  onUpdateCell: (rowIndex: number, column: string, value: any) => void;
+}
 
 export const DataTable: React.FC<DataTableProps> = ({
   data,
@@ -13,21 +17,83 @@ export const DataTable: React.FC<DataTableProps> = ({
   customColumns,
   onUpdateCell,
 }) => {
-  const { customWidths, handleResizeStart, resizing } = useColumnResize();
-  const { columnWidths, totalWidth } = useColumnWidths(data, columns, customWidths);
+  console.log('Data received:', data);
+  console.log('Columns:', columns);
+
+  const gridColumns: GridColDef[] = columns.map((column) => {
+    const customCol = customColumns[column];
+    
+    return {
+      field: column,
+      headerName: column,
+      flex: 1,
+      minWidth: 150,
+      resizable: true,
+      editable: !customCol || customCol.type === 'text',
+      type: 'string',
+      renderCell: (params) => {
+        if (!customCol) return params.value;
+
+        switch (customCol.type) {
+          case 'checkbox':
+            return (
+              <Checkbox
+                checked={!!params.value}
+                onChange={(e) => onUpdateCell(params.row.id, column, e.target.checked)}
+              />
+            );
+          case 'select':
+            return (
+              <Select
+                value={params.value || ''}
+                onChange={(e) => onUpdateCell(params.row.id, column, e.target.value)}
+                size="small"
+                fullWidth
+              >
+                {customCol.options?.map((option) => (
+                  <MenuItem key={option} value={option}>
+                    {option}
+                  </MenuItem>
+                ))}
+              </Select>
+            );
+          default:
+            return params.value;
+        }
+      }
+    };
+  });
+
+  const rowsWithIds = data.map((row, index) => ({
+    id: index,
+    ...row,
+  }));
+
+  console.log('Grid columns:', gridColumns);
+  console.log('First row:', rowsWithIds[0]);
 
   return (
-    <Box>
-      <TableContent
-        data={data}
-        columns={columns}
-        columnWidths={columnWidths}
-        totalWidth={totalWidth}
-        customColumns={customColumns}
-        onUpdateCell={onUpdateCell}
-        onResizeStart={handleResizeStart}
-        resizing={resizing}
+    <div style={{ height: 600, width: '100%' }}>
+      <DataGrid
+        rows={rowsWithIds}
+        columns={gridColumns}
+        density="compact"
+        disableRowSelectionOnClick
+        getRowHeight={() => 'auto'}
+        editMode="cell"
+        initialState={{
+          columns: {
+            columnVisibilityModel: Object.fromEntries(
+              columns.map(column => [column, true])
+            ),
+          },
+        }}
+        sx={{
+          '& .MuiDataGrid-cell': {
+            padding: '8px',
+          },
+        }}
       />
-    </Box>
+    </div>
   );
 }; 
