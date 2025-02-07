@@ -3,11 +3,15 @@ import { useProjects } from '../../contexts/useProjects';
 import { Projects } from './Projects';
 import { ProjectContent } from './ProjectContent';
 import { NewProjectDialog } from './NewProjectDialog';
+import { Box, CircularProgress, Alert } from '@mui/material';
+import { projectService } from '../../services/projectService';
 
 export const ProjectsView: React.FC = () => {
   const {
     projects,
     currentProject,
+    isLoading,
+    error,
     data,
     columns,
     createProject,
@@ -18,10 +22,28 @@ export const ProjectsView: React.FC = () => {
     setCurrentProject,
     editProject,
     setProjects,
-    setColumns
+    setColumns,
+    updateCell,
+    userId,
   } = useProjects();
 
   const [isNewProjectDialogOpen, setIsNewProjectDialogOpen] = useState(false);
+
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert severity="error" sx={{ mt: 4 }}>
+        {error}
+      </Alert>
+    );
+  }
 
   if (!currentProject) {
     return (
@@ -55,21 +77,21 @@ export const ProjectsView: React.FC = () => {
       onDataUpdate={updateProjectData}
       onClearData={clearData}
       customColumns={currentProject?.customColumns || {}}
-      onAddCustomColumn={(column) => {
+      onAddCustomColumn={async (column) => {
         const updatedProject = {
           ...currentProject,
           customColumns: { ...currentProject.customColumns, [column.name]: column },
           columns: [...currentProject.columns, column.name]
         };
+        await projectService.saveProject(userId, updatedProject);
         setCurrentProject(updatedProject);
         setColumns([...columns, column.name]);
         setProjects(prev => prev.map(p => p.id === currentProject.id ? updatedProject : p));
       }}
-      onUpdateData={(newData) => {
-        updateProjectData(newData, columns);
-      }}
+      onUpdateData={updateCell}
       currentProject={currentProject}
       onBackToProjects={() => setCurrentProject(null)}
+      userId={userId}
     />
   );
 }; 

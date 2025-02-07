@@ -7,6 +7,8 @@ import { DataTable } from '../data-table/DataTable';
 import { DataRecord } from '../../types/datatable';
 import { AddColumnDialog } from './AddColumnDialog';
 import { CustomColumn } from '../../types/project';
+import { projectService } from '../../services/projectService';
+import { Project } from '../../types/project';
 
 interface ProjectContentProps {
   data: DataRecord[];
@@ -15,9 +17,10 @@ interface ProjectContentProps {
   onClearData: () => void;
   customColumns: Record<string, CustomColumn>;
   onAddCustomColumn: (column: CustomColumn) => void;
-  onUpdateData: (data: DataRecord[]) => void;
-  currentProject?: { name: string };
+  onUpdateData: (rowIndex: number, column: string, value: any) => void;
+  currentProject?: Project;
   onBackToProjects: () => void;
+  userId: string;
 }
 
 export const ProjectContent: React.FC<ProjectContentProps> = ({
@@ -30,6 +33,7 @@ export const ProjectContent: React.FC<ProjectContentProps> = ({
   onUpdateData,
   currentProject,
   onBackToProjects,
+  userId,
 }) => {
   const [isAddColumnDialogOpen, setIsAddColumnDialogOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -90,10 +94,33 @@ export const ProjectContent: React.FC<ProjectContentProps> = ({
             data={data}
             columns={columns}
             customColumns={customColumns}
-            onUpdateCell={(rowIndex, column, value) => {
+            onUpdateCell={async (rowIndex, column, value) => {
+              // First update local state for immediate feedback
               const newData = [...data];
               newData[rowIndex] = { ...newData[rowIndex], [column]: value };
-              onUpdateData(newData);
+              
+              // Then update the project in Supabase
+              if (currentProject) {
+                const updatedProject = {
+                  ...currentProject,
+                  data: newData,
+                  updatedAt: new Date().toISOString(),
+                  id: currentProject.id,
+                  name: currentProject.name,
+                  userId: userId,
+                  columns: currentProject.columns,
+                  customColumns: currentProject.customColumns,
+                  createdAt: currentProject.createdAt
+                };
+                
+                try {
+                  await projectService.saveProject(userId, updatedProject);
+                  onUpdateData(rowIndex, column, value);  // This calls updateCell from useProjects
+                } catch (error) {
+                  console.error('Failed to save cell update:', error);
+                  // Optionally add error handling UI here
+                }
+              }
             }}
           />
           <AddColumnDialog

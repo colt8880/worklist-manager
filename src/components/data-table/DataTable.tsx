@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { DataGrid, GridColDef, GridCellParams, GridRenderCellParams } from '@mui/x-data-grid';
-import { Checkbox, Select, MenuItem } from '@mui/material';
+import { Checkbox, Select, MenuItem, TextField } from '@mui/material';
 import { DataRecord } from '../../types/datatable';
 import { CustomColumn } from '../../types/project';
 
@@ -23,7 +23,7 @@ export const DataTable: React.FC<DataTableProps> = ({
       headerName: column,
       flex: 1,
       minWidth: 150,
-      editable: true,
+      editable: !customColumns[column] || customColumns[column].type === 'text',
       renderCell: (params: GridRenderCellParams) => {
         const customColumn = customColumns[column];
         if (!customColumn) return params.value;
@@ -77,10 +77,13 @@ export const DataTable: React.FC<DataTableProps> = ({
       columns={gridColumns}
       autoHeight
       disableRowSelectionOnClick
-      onCellEditStop={(params, event) => {
-        if (params.reason === 'cellFocusOut') {
-          onUpdateCell(params.row.id, params.field, params.value);
+      processRowUpdate={(newRow, oldRow) => {
+        console.log('Row update:', newRow);
+        const changedField = Object.keys(newRow).find(key => newRow[key] !== oldRow[key]);
+        if (changedField) {
+          onUpdateCell(newRow.id, changedField, newRow[changedField]);
         }
+        return newRow;
       }}
       sx={{
         '& .MuiDataGrid-cell': {

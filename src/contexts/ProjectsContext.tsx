@@ -17,6 +17,10 @@ interface ProjectsContextType {
   editProject: (projectId: string, name: string) => void;
   setProjects: React.Dispatch<React.SetStateAction<Project[]>>;
   setColumns: React.Dispatch<React.SetStateAction<string[]>>;
+  updateCell: (rowIndex: number, column: string, value: any) => void;
+  isLoading: boolean;
+  error: string | null;
+  userId: string;
 }
 
 export const ProjectsContext = createContext<ProjectsContextType | null>(null);
