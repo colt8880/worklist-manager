@@ -30,6 +30,7 @@ export const AddColumnDialog: React.FC<AddColumnDialogProps> = ({
   const [column, setColumn] = useState<CustomColumn>({
     name: '',
     type: 'text',
+    label: '',
     helperText: '',
     options: [],
   });
@@ -42,7 +43,13 @@ export const AddColumnDialog: React.FC<AddColumnDialogProps> = ({
         options: optionsText.split(',').map(opt => opt.trim()).filter(Boolean)
       };
       onAdd(finalColumn);
-      setColumn({ name: '', type: 'text', helperText: '', options: [] });
+      setColumn({
+        name: '',
+        type: 'text',
+        label: '',
+        helperText: '',
+        options: []
+      });
       setOptionsText('');
       onClose();
     }

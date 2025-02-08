@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { DataGrid, GridColDef, GridCellParams, GridRenderCellParams } from '@mui/x-data-grid';
-import { Checkbox, Select, MenuItem, TextField } from '@mui/material';
+import { Checkbox, Select, MenuItem, TextField, Box, Typography, Tooltip } from '@mui/material';
 import { DataRecord } from '../../types/datatable';
 import { CustomColumn } from '../../types/project';
 
@@ -24,6 +24,19 @@ export const DataTable: React.FC<DataTableProps> = ({
       flex: 1,
       minWidth: 150,
       editable: !customColumns[column] || customColumns[column].type === 'text',
+      renderHeader: () => {
+        const customColumn = customColumns[column];
+        return (
+          <Tooltip 
+            title={customColumn?.helperText || ''} 
+            placement="top"
+          >
+            <div style={{ width: '100%', cursor: 'help' }}>
+              {column}
+            </div>
+          </Tooltip>
+        );
+      },
       renderCell: (params: GridRenderCellParams) => {
         const customColumn = customColumns[column];
         if (!customColumn) return params.value;
