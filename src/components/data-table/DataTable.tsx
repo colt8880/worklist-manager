@@ -32,7 +32,7 @@ export const DataTable: React.FC<DataTableProps> = ({
             placement="top"
           >
             <div style={{ width: '100%', cursor: 'help' }}>
-              {column}
+              {customColumn?.label || column}
             </div>
           </Tooltip>
         );
