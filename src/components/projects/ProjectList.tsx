@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Box, 
   List, 
@@ -7,9 +7,14 @@ import {
   IconButton, 
   Menu, 
   MenuItem,
-  Typography 
+  Typography,
+  TextField,
+  InputAdornment,
+  Fade
 } from '@mui/material';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import SearchIcon from '@mui/icons-material/Search';
+import CloseIcon from '@mui/icons-material/Close';
 import { Project, ProjectSummary } from '../../types/project';
 import { formatDate } from '../../utils/dateUtils';
 import { EditProjectDialog } from './EditProjectDialog';
@@ -30,6 +35,15 @@ export const ProjectList: React.FC<ProjectListProps> = ({
   const [menuAnchor, setMenuAnchor] = useState<{ [key: string]: HTMLElement | null }>({});
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [projectToEdit, setProjectToEdit] = useState<{ id: string; name: string } | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isSearchVisible && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [isSearchVisible]);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, projectId: string) => {
     event.stopPropagation();
@@ -40,10 +54,71 @@ export const ProjectList: React.FC<ProjectListProps> = ({
     setMenuAnchor({ [projectId]: null });
   };
 
+  const filteredProjects = projects.filter(project => 
+    project.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleSearchClose = () => {
+    setIsSearchVisible(false);
+    setSearchTerm('');
+  };
+
   return (
     <>
+      <Box sx={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        mb: 2, 
+        gap: 1, 
+        position: 'relative',
+        height: 40,
+      }}>
+        <Fade in={!isSearchVisible}>
+          <IconButton 
+            onClick={() => setIsSearchVisible(true)}
+            sx={{
+              position: 'absolute',
+              left: 0,
+            }}
+          >
+            <SearchIcon />
+          </IconButton>
+        </Fade>
+        <Fade in={isSearchVisible}>
+          <Box sx={{ 
+            maxWidth: { xs: '100%', sm: '50%', md: '25%' },
+            minWidth: '200px',
+            display: 'flex', 
+            gap: 1,
+            position: 'absolute',
+            left: 0,
+            transition: 'all 0.3s ease-in-out',
+          }}>
+            <TextField
+              fullWidth
+              variant="outlined"
+              placeholder="Search projects..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              inputRef={searchInputRef}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon color="action" />
+                  </InputAdornment>
+                ),
+              }}
+              size="small"
+            />
+            <IconButton onClick={handleSearchClose} size="small">
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </Fade>
+      </Box>
+
       <List>
-        {projects.map((project) => (
+        {filteredProjects.map((project) => (
           <ListItem
             key={project.id}
             onClick={() => onOpenProject(project.id)}
@@ -102,6 +177,14 @@ export const ProjectList: React.FC<ProjectListProps> = ({
             </Menu>
           </ListItem>
         ))}
+        
+        {filteredProjects.length === 0 && (
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <Typography color="text.secondary">
+              {searchTerm ? 'No projects match your search' : 'No projects yet'}
+            </Typography>
+          </Box>
+        )}
       </List>
       {projectToEdit && (
         <EditProjectDialog
