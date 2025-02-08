@@ -9,6 +9,8 @@ interface DataTableProps {
   columns: string[];
   customColumns: Record<string, CustomColumn>;
   onUpdateCell: (rowIndex: number, column: string, value: any) => void;
+  onColumnOrderChange?: (newOrder: string[]) => void;
+  columnOrder?: string[];
 }
 
 export const DataTable: React.FC<DataTableProps> = ({
@@ -16,11 +18,19 @@ export const DataTable: React.FC<DataTableProps> = ({
   columns,
   customColumns,
   onUpdateCell,
+  onColumnOrderChange,
+  columnOrder,
 }) => {
+  // Use columnOrder if provided, otherwise use columns
+  const orderedColumns = useMemo(() => 
+    columnOrder || columns,
+    [columnOrder, columns]
+  );
+
   const gridColumns: GridColDef[] = useMemo(() => 
-    columns.map((column): GridColDef => ({
+    orderedColumns.map((column): GridColDef => ({
       field: column,
-      headerName: column,
+      headerName: customColumns[column]?.label || column,
       flex: 1,
       minWidth: 150,
       editable: !customColumns[column] || customColumns[column].type === 'text',
@@ -73,30 +83,28 @@ export const DataTable: React.FC<DataTableProps> = ({
         }
       },
     })),
-    [columns, customColumns, onUpdateCell]
-  );
-
-  const rows = useMemo(() => 
-    data.map((row, index) => ({
-      id: index,
-      ...row,
-    })),
-    [data]
+    [orderedColumns, customColumns]
   );
 
   return (
     <DataGrid
-      rows={rows}
+      rows={data.map((row, index) => ({ id: index, ...row }))}
       columns={gridColumns}
       autoHeight
       disableRowSelectionOnClick
+      disableColumnMenu={false}
       processRowUpdate={(newRow, oldRow) => {
-        console.log('Row update:', newRow);
         const changedField = Object.keys(newRow).find(key => newRow[key] !== oldRow[key]);
         if (changedField) {
           onUpdateCell(newRow.id, changedField, newRow[changedField]);
         }
         return newRow;
+      }}
+      onColumnOrderChange={(params) => {
+        const newOrder = params.targetIndex !== undefined ? 
+          gridColumns.map(col => col.field) :
+          columns;
+        onColumnOrderChange?.(newOrder);
       }}
       sx={{
         '& .MuiDataGrid-cell': {
@@ -105,6 +113,7 @@ export const DataTable: React.FC<DataTableProps> = ({
         '& .MuiDataGrid-columnHeader': {
           borderRight: '1px solid rgba(224, 224, 224, 1)',
           backgroundColor: 'rgba(0, 0, 0, 0.02)',
+          cursor: 'move',
         },
       }}
     />

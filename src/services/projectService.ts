@@ -38,6 +38,7 @@ export const projectService = {
           userId: username,
           data: project.data,
           columns: project.columns,
+          columnOrder: project.columnOrder,
           customColumns: project.customColumns,
           createdAt: project.createdAt,
           updatedAt: new Date().toISOString()

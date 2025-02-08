@@ -16,6 +16,7 @@ export interface Project {
   userId: string;
   data: any[];
   columns: string[];
+  columnOrder?: string[];
   customColumns: Record<string, CustomColumn>;
   createdAt: string;
   updatedAt: string;

@@ -90,6 +90,7 @@ export const ProjectsView: React.FC = () => {
       }}
       onUpdateData={updateCell}
       currentProject={currentProject}
+      setCurrentProject={setCurrentProject}
       onBackToProjects={() => setCurrentProject(null)}
       userId={userId}
     />
