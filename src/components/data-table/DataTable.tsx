@@ -104,12 +104,18 @@ export const DataTable: React.FC<DataTableProps> = ({
         switch (customColumn.type) {
           case 'checkbox':
             return (
-              <Checkbox
-                checked={Boolean(params.value)}
-                onChange={(e) => 
-                  onUpdateCell(params.row.id, column, e.target.checked)
-                }
-              />
+              <Box onClick={(e) => e.stopPropagation()}>
+                <Checkbox
+                  checked={Boolean(params.value)}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    const newValue = e.target.checked;
+                    onUpdateCell(params.row.id, column, newValue);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  sx={{ padding: '0px' }}
+                />
+              </Box>
             );
           case 'select':
             return (

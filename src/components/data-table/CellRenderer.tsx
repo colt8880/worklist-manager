@@ -26,7 +26,11 @@ export const CellRenderer: React.FC<CellRendererProps> = ({
       return (
         <Checkbox
           checked={Boolean(value)}
-          onChange={(e) => onUpdateCell(rowIndex, column, e.target.checked)}
+          onChange={(e) => {
+            e.stopPropagation();
+            onUpdateCell(rowIndex, column, e.target.checked);
+          }}
+          onClick={(e) => e.stopPropagation()}
         />
       );
     case 'select':

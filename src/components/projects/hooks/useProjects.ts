@@ -141,6 +141,11 @@ export const useProjects = (userId: string) => {
 
   const addCustomColumn = async (column: CustomColumn) => {
     if (currentProject) {
+      // Initialize data for checkbox columns with false values
+      const updatedData = column.type === 'checkbox'
+        ? data.map(row => ({ ...row, [column.name]: false }))
+        : data;
+
       const updatedProject = {
         ...currentProject,
         customColumns: { 
@@ -148,10 +153,11 @@ export const useProjects = (userId: string) => {
           [column.name]: column 
         },
         columns: [...currentProject.columns, column.name],
+        data: updatedData,
         updatedAt: new Date().toISOString()
       };
 
-      // Save to localStorage
+      // Save to database
       await projectService.saveProject(userId, updatedProject);
       
       // Update local state
@@ -160,6 +166,7 @@ export const useProjects = (userId: string) => {
         prev.map(p => p.id === currentProject.id ? updatedProject : p)
       );
       setColumns([...columns, column.name]);
+      setData(updatedData);
     }
   };
 
@@ -188,25 +195,33 @@ export const useProjects = (userId: string) => {
 
   const updateCell = async (rowIndex: number, column: string, value: any) => {
     if (currentProject) {
-      // Update the data
-      const newData = [...data];
-      newData[rowIndex] = { ...newData[rowIndex], [column]: value };
+      try {
+        // Update the data
+        const newData = [...data];
+        const customColumn = currentProject.customColumns[column];
+        
+        // Handle checkbox values explicitly
+        const processedValue = customColumn?.type === 'checkbox' ? Boolean(value) : value;
+        newData[rowIndex] = { ...newData[rowIndex], [column]: processedValue };
 
-      const updatedProject = {
-        ...currentProject,
-        data: newData,
-        updatedAt: new Date().toISOString()
-      };
+        const updatedProject = {
+          ...currentProject,
+          data: newData,
+          updatedAt: new Date().toISOString()
+        };
 
-      // Save to localStorage
-      await projectService.saveProject(userId, updatedProject);
-      
-      // Update local state
-      setCurrentProject(updatedProject);
-      setProjects(prev => 
-        prev.map(p => p.id === currentProject.id ? updatedProject : p)
-      );
-      setData(newData);
+        // Save to database
+        const savedProject = await projectService.saveProject(userId, updatedProject);
+        
+        // Update local state with the saved project data
+        setCurrentProject(savedProject);
+        setProjects(prev => 
+          prev.map(p => p.id === currentProject.id ? savedProject : p)
+        );
+        setData(savedProject.data);
+      } catch (error) {
+        console.error('Failed to update cell:', error);
+      }
     }
   };
 
