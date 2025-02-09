@@ -1,16 +1,64 @@
 import React, { useMemo } from 'react';
-import { DataGrid, GridColDef, GridCellParams, GridRenderCellParams } from '@mui/x-data-grid';
-import { Checkbox, Select, MenuItem, TextField, Box, Typography, Tooltip } from '@mui/material';
-import { DataRecord } from '../../types/datatable';
+import {
+  DataGrid,
+  GridColDef,
+  GridCellParams,
+  GridRenderCellParams,
+  GridColumnMenuProps,
+  GridColumnMenu,
+  GridRowModel,
+  GridColumnVisibilityModel,
+  GridColumnOrderChangeParams,
+} from '@mui/x-data-grid';
+import { Checkbox, Select, MenuItem, TextField, Box, Typography, Tooltip, Divider } from '@mui/material';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { CustomColumn } from '../../types/project';
+import { DataTableProps } from '../../types/datatable';
 
-interface DataTableProps {
-  data: DataRecord[];
-  columns: string[];
-  customColumns: Record<string, CustomColumn>;
-  onUpdateCell: (rowIndex: number, column: string, value: any) => void;
-  onColumnOrderChange?: (newOrder: string[]) => void;
-  columnOrder?: string[];
+interface CustomColumnMenuProps extends GridColumnMenuProps {
+  onDeleteColumn?: (columnName: string) => void;
+}
+
+function CustomColumnMenu(props: CustomColumnMenuProps) {
+  const { hideMenu, colDef, onDeleteColumn } = props;
+
+  const handleDeleteColumn = (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    console.log('Delete column clicked:', colDef.field);
+    if (window.confirm('Are you sure you want to delete this column? This action cannot be undone.')) {
+      console.log('Confirmed deletion for column:', colDef.field);
+      onDeleteColumn?.(colDef.field);
+    }
+    const syntheticEvent = { stopPropagation: () => {} } as React.SyntheticEvent;
+    hideMenu(syntheticEvent);
+  };
+
+  return (
+    <div>
+      <GridColumnMenu {...props} />
+      <Divider />
+      <MenuItem 
+        onClick={handleDeleteColumn}
+        data-testid="delete-column-menu-item"
+        sx={{
+          padding: '6px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          minHeight: '32px',
+          color: 'error.main',
+          '& .MuiSvgIcon-root': {
+            fontSize: '1.25rem',
+            color: 'error.main',
+            marginRight: 2
+          }
+        }}
+      >
+        <DeleteOutlineIcon />
+        Delete Column
+      </MenuItem>
+    </div>
+  );
 }
 
 export const DataTable: React.FC<DataTableProps> = ({
@@ -18,17 +66,19 @@ export const DataTable: React.FC<DataTableProps> = ({
   columns,
   customColumns,
   onUpdateCell,
-  onColumnOrderChange,
-  columnOrder,
+  onDeleteColumn,
 }) => {
-  // Use columnOrder if provided, otherwise use columns
-  const orderedColumns = useMemo(() => 
-    columnOrder || columns,
-    [columnOrder, columns]
+  // Add IDs to rows if they don't exist
+  const rowsWithIds = useMemo(() => 
+    data.map((row, index) => ({
+      id: row.id ?? index,
+      ...row
+    })),
+    [data]
   );
 
-  const gridColumns: GridColDef[] = useMemo(() => 
-    orderedColumns.map((column): GridColDef => ({
+  const columnDefs: GridColDef[] = useMemo(() => 
+    columns.map((column): GridColDef => ({
       field: column,
       headerName: customColumns[column]?.label || column,
       flex: 1,
@@ -83,28 +133,37 @@ export const DataTable: React.FC<DataTableProps> = ({
         }
       },
     })),
-    [orderedColumns, customColumns]
+    [columns, customColumns]
   );
+
+  const handleProcessRowUpdate = (newRow: GridRowModel, oldRow: GridRowModel) => {
+    const changedField = Object.keys(newRow).find(key => newRow[key] !== oldRow[key]);
+    if (changedField) {
+      onUpdateCell(newRow.id as number, changedField, newRow[changedField]);
+    }
+    return newRow;
+  };
+
+  const handleDeleteColumn = (columnName: string) => {
+    console.log('DataTable handleDeleteColumn called with:', columnName);
+    onDeleteColumn?.(columnName);
+  };
 
   return (
     <DataGrid
-      rows={data.map((row, index) => ({ id: index, ...row }))}
-      columns={gridColumns}
+      rows={rowsWithIds}
+      columns={columnDefs}
       autoHeight
       disableRowSelectionOnClick
       disableColumnMenu={false}
-      processRowUpdate={(newRow, oldRow) => {
-        const changedField = Object.keys(newRow).find(key => newRow[key] !== oldRow[key]);
-        if (changedField) {
-          onUpdateCell(newRow.id, changedField, newRow[changedField]);
-        }
-        return newRow;
+      processRowUpdate={handleProcessRowUpdate}
+      slots={{
+        columnMenu: CustomColumnMenu,
       }}
-      onColumnOrderChange={(params) => {
-        const newOrder = params.targetIndex !== undefined ? 
-          gridColumns.map(col => col.field) :
-          columns;
-        onColumnOrderChange?.(newOrder);
+      slotProps={{
+        columnMenu: {
+          onDeleteColumn: handleDeleteColumn,
+        } as Partial<CustomColumnMenuProps>,
       }}
       sx={{
         '& .MuiDataGrid-cell': {
@@ -113,7 +172,6 @@ export const DataTable: React.FC<DataTableProps> = ({
         '& .MuiDataGrid-columnHeader': {
           borderRight: '1px solid rgba(224, 224, 224, 1)',
           backgroundColor: 'rgba(0, 0, 0, 0.02)',
-          cursor: 'move',
         },
       }}
     />

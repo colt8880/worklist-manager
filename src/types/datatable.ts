@@ -15,10 +15,11 @@ export interface Styles {
 }
 
 export interface DataTableProps {
-  data: DataRecord[];
+  data: Record<string, any>[];
   columns: string[];
   customColumns: Record<string, CustomColumn>;
-  onUpdateCell: (rowIndex: number, column: string, value: any) => void;
+  onUpdateCell: (rowId: number, columnName: string, value: any) => void;
+  onDeleteColumn?: (columnName: string) => void;
 }
 
 export interface RowProps {

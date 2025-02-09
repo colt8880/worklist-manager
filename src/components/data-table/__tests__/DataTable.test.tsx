@@ -37,7 +37,13 @@ describe('DataTable', () => {
   };
 
   const mockOnUpdateCell = jest.fn();
-  const mockOnColumnOrderChange = jest.fn();
+  const mockOnDeleteColumn = jest.fn();
+
+  beforeEach(() => {
+    mockOnUpdateCell.mockClear();
+    mockOnDeleteColumn.mockClear();
+    window.confirm = jest.fn(() => true); // Mock confirm to return true by default
+  });
 
   it('renders data grid with correct columns and data', () => {
     render(
@@ -46,6 +52,7 @@ describe('DataTable', () => {
         columns={mockColumns}
         customColumns={mockCustomColumns}
         onUpdateCell={mockOnUpdateCell}
+        onDeleteColumn={mockOnDeleteColumn}
       />
     );
 
@@ -63,16 +70,15 @@ describe('DataTable', () => {
   it('handles text cell editing correctly', async () => {
     const user = userEvent.setup();
     
-    const { container, debug } = render(
+    render(
       <DataTable
         data={mockData}
         columns={mockColumns}
         customColumns={mockCustomColumns}
         onUpdateCell={mockOnUpdateCell}
+        onDeleteColumn={mockOnDeleteColumn}
       />
     );
-
-    debug();
     
     // Find and click the cell with John's name
     const nameCell = screen.getByText('John');
@@ -94,6 +100,7 @@ describe('DataTable', () => {
         columns={mockColumns}
         customColumns={mockCustomColumns}
         onUpdateCell={mockOnUpdateCell}
+        onDeleteColumn={mockOnDeleteColumn}
       />
     );
     
@@ -109,6 +116,7 @@ describe('DataTable', () => {
         columns={mockColumns}
         customColumns={mockCustomColumns}
         onUpdateCell={mockOnUpdateCell}
+        onDeleteColumn={mockOnDeleteColumn}
       />
     );
 
@@ -127,6 +135,7 @@ describe('DataTable', () => {
         columns={mockColumns}
         customColumns={mockCustomColumns}
         onUpdateCell={mockOnUpdateCell}
+        onDeleteColumn={mockOnDeleteColumn}
       />
     );
 
@@ -148,6 +157,7 @@ describe('DataTable', () => {
         columns={mockColumns}
         customColumns={mockCustomColumns}
         onUpdateCell={mockOnUpdateCell}
+        onDeleteColumn={mockOnDeleteColumn}
       />
     );
 
@@ -157,23 +167,62 @@ describe('DataTable', () => {
     expect(await screen.findByText('Toggle active status')).toBeInTheDocument();
   });
 
-  it('handles column reordering', () => {
-    const newColumnOrder = ['age', 'name', 'isActive', 'status'];
-    
-    render(
-      <DataTable
-        data={mockData}
-        columns={mockColumns}
-        customColumns={mockCustomColumns}
-        onUpdateCell={mockOnUpdateCell}
-        onColumnOrderChange={mockOnColumnOrderChange}
-        columnOrder={newColumnOrder}
-      />
-    );
+  describe('Column Management', () => {
+    it('handles column deletion', async () => {
+      const user = userEvent.setup();
+      
+      render(
+        <DataTable
+          data={mockData}
+          columns={mockColumns}
+          customColumns={mockCustomColumns}
+          onUpdateCell={mockOnUpdateCell}
+          onDeleteColumn={mockOnDeleteColumn}
+        />
+      );
 
-    const headers = screen.getAllByRole('columnheader');
-    expect(within(headers[0]).getByText('age')).toBeInTheDocument();
-    expect(within(headers[1]).getByText('name')).toBeInTheDocument();
+      // Find and click the column header menu button
+      const nameColumnHeader = screen.getByRole('columnheader', { name: /name/i });
+      const menuButton = within(nameColumnHeader).getByLabelText(/menu/i);
+      await user.click(menuButton);
+
+      // Click the delete option
+      const deleteOption = screen.getByRole('menuitem', { name: /delete column/i });
+      await user.click(deleteOption);
+
+      // Verify delete callback was called with correct column name
+      expect(mockOnDeleteColumn).toHaveBeenCalledWith('name');
+    });
+
+    it('shows confirmation dialog before deleting column', async () => {
+      const user = userEvent.setup();
+      window.confirm = jest.fn(() => false); // Override to cancel
+      
+      render(
+        <DataTable
+          data={mockData}
+          columns={mockColumns}
+          customColumns={mockCustomColumns}
+          onUpdateCell={mockOnUpdateCell}
+          onDeleteColumn={mockOnDeleteColumn}
+        />
+      );
+
+      // Find and click the column header menu button
+      const nameColumnHeader = screen.getByRole('columnheader', { name: /name/i });
+      const menuButton = within(nameColumnHeader).getByLabelText(/menu/i);
+      await user.click(menuButton);
+
+      // Click the delete option
+      const deleteOption = screen.getByRole('menuitem', { name: /delete column/i });
+      await user.click(deleteOption);
+
+      // Verify confirmation was shown
+      expect(window.confirm).toHaveBeenCalledWith('Are you sure you want to delete this column? This action cannot be undone.');
+      
+      // Verify delete was not called when user cancels
+      expect(mockOnDeleteColumn).not.toHaveBeenCalled();
+    });
   });
 
   describe('Performance Tests', () => {
@@ -196,6 +245,7 @@ describe('DataTable', () => {
           columns={mockColumns}
           customColumns={mockCustomColumns}
           onUpdateCell={mockOnUpdateCell}
+          onDeleteColumn={mockOnDeleteColumn}
         />
       );
       jest.runAllTimers();
@@ -231,6 +281,7 @@ describe('DataTable', () => {
           columns={mockColumns}
           customColumns={mockCustomColumns}
           onUpdateCell={mockOnUpdateCell}
+          onDeleteColumn={mockOnDeleteColumn}
         />
       );
 
@@ -254,6 +305,7 @@ describe('DataTable', () => {
           columns={[...mockColumns, 'undefinedColumn']}
           customColumns={mockCustomColumns}
           onUpdateCell={mockOnUpdateCell}
+          onDeleteColumn={mockOnDeleteColumn}
         />
       );
 
@@ -277,6 +329,7 @@ describe('DataTable', () => {
           columns={mockColumns}
           customColumns={invalidCustomColumns}
           onUpdateCell={mockOnUpdateCell}
+          onDeleteColumn={mockOnDeleteColumn}
         />
       );
 
@@ -303,6 +356,7 @@ describe('DataTable', () => {
             }
           }}
           onUpdateCell={mockOnUpdateCell}
+          onDeleteColumn={mockOnDeleteColumn}
         />
       );
 
@@ -324,6 +378,7 @@ describe('DataTable', () => {
           columns={mockColumns}
           customColumns={mockCustomColumns}
           onUpdateCell={mockOnUpdateCell}
+          onDeleteColumn={mockOnDeleteColumn}
         />
       );
 
@@ -341,6 +396,7 @@ describe('DataTable', () => {
           columns={mockColumns}
           customColumns={mockCustomColumns}
           onUpdateCell={mockOnUpdateCell}
+          onDeleteColumn={mockOnDeleteColumn}
         />
       );
 
@@ -368,6 +424,7 @@ describe('DataTable', () => {
           columns={mockColumns}
           customColumns={mockCustomColumns}
           onUpdateCell={mockOnUpdateCell}
+          onDeleteColumn={mockOnDeleteColumn}
         />
       );
 
@@ -399,6 +456,7 @@ describe('DataTable', () => {
           columns={mockColumns}
           customColumns={mockCustomColumns}
           onUpdateCell={mockOnUpdateCell}
+          onDeleteColumn={mockOnDeleteColumn}
         />
       );
 
@@ -428,6 +486,7 @@ describe('DataTable', () => {
           columns={mockColumns}
           customColumns={mockCustomColumns}
           onUpdateCell={mockOnUpdateCell}
+          onDeleteColumn={mockOnDeleteColumn}
         />
       );
 

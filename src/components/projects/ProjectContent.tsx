@@ -56,19 +56,37 @@ export const ProjectContent: React.FC<ProjectContentProps> = ({
     }
   };
 
-  const handleColumnOrderChange = async (newOrder: string[]) => {
+  const handleDeleteColumn = async (columnName: string) => {
     if (currentProject) {
-      const updatedProject = {
-        ...currentProject,
-        columnOrder: newOrder,
-        updatedAt: new Date().toISOString()
-      };
-
       try {
-        await projectService.saveProject(userId, updatedProject);
-        setCurrentProject(updatedProject);
+        // Remove column from customColumns if it exists
+        const { [columnName]: deletedColumn, ...remainingCustomColumns } = currentProject.customColumns || {};
+        
+        // Remove column from columns array
+        const updatedColumns = columns.filter(col => col !== columnName);
+        
+        // Remove column data from all records
+        const updatedData = data.map(record => {
+          const { [columnName]: deletedValue, ...remainingData } = record;
+          return remainingData;
+        });
+
+        const updatedProject = {
+          ...currentProject,
+          customColumns: remainingCustomColumns,
+          columns: updatedColumns,
+          data: updatedData,
+          updatedAt: new Date().toISOString()
+        };
+
+        // Save to database
+        const savedProject = await projectService.saveProject(userId, updatedProject);
+        
+        // Update local state
+        setCurrentProject(savedProject);
+        onDataUpdate(updatedData, updatedColumns);
       } catch (error) {
-        console.error('Failed to save column order:', error);
+        console.error('Failed to delete column:', error);
       }
     }
   };
@@ -122,8 +140,7 @@ export const ProjectContent: React.FC<ProjectContentProps> = ({
             columns={columns}
             customColumns={currentProject?.customColumns || {}}
             onUpdateCell={onUpdateData}
-            onColumnOrderChange={handleColumnOrderChange}
-            columnOrder={currentProject?.columnOrder}
+            onDeleteColumn={handleDeleteColumn}
           />
           <AddColumnDialog
             open={isAddColumnDialogOpen}
