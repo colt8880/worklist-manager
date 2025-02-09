@@ -3,6 +3,7 @@ import { Project, ProjectSummary, CustomColumn } from '../../../types/project';
 import { DataRecord } from '../../../types';
 import { projectService } from '../../../services/projectService';
 import { supabase } from '../../../config/supabase';
+import React from 'react';
 
 // Mock project data - replace with API calls in production
 const mockProjects: Project[] = [
@@ -26,24 +27,71 @@ export const useProjects = (userId: string) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Cache for projects data
+  const projectsCache = React.useRef<{
+    userId: string | null;
+    projects: Project[];
+    timestamp: number;
+  }>({
+    userId: null,
+    projects: [],
+    timestamp: 0
+  });
+
   // Load projects on mount
   useEffect(() => {
+    console.log('useEffect triggered with userId:', userId);
+    let isMounted = true;
+
     const loadProjects = async () => {
-      if (userId) {
-        try {
-          setIsLoading(true);
-          setError(null);
+      if (!userId || !isMounted) return;
+
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        // Check cache validity (5 minute expiry)
+        const now = Date.now();
+        const cacheIsValid = 
+          projectsCache.current.userId === userId && 
+          projectsCache.current.projects.length > 0 &&
+          (now - projectsCache.current.timestamp) < 5 * 60 * 1000;
+
+        if (cacheIsValid) {
+          console.log('Using cached projects data');
+          setProjects(projectsCache.current.projects);
+        } else {
+          console.log('Starting to load projects...');
           const loadedProjects = await projectService.getProjects(userId);
-          setProjects(loadedProjects);
-        } catch (err) {
+          if (isMounted) {
+            console.log('Setting projects in state');
+            setProjects(loadedProjects);
+            // Update cache
+            projectsCache.current = {
+              userId,
+              projects: loadedProjects,
+              timestamp: now
+            };
+          }
+        }
+      } catch (err) {
+        if (isMounted) {
           setError(err instanceof Error ? err.message : 'Failed to load projects');
           console.error('Error loading projects:', err);
-        } finally {
+        }
+      } finally {
+        if (isMounted) {
           setIsLoading(false);
         }
       }
     };
+
     loadProjects();
+
+    return () => {
+      console.log('useEffect cleanup - unmounting');
+      isMounted = false;
+    };
   }, [userId]);
 
   const createProject = async (name: string) => {
@@ -77,17 +125,23 @@ export const useProjects = (userId: string) => {
 
   const openProject = async (projectId: string) => {
     try {
-      // Get fresh data from Supabase
-      const { data: projects } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('id', projectId)
-        .single();
-
-      if (projects) {
-        setCurrentProject(projects);
-        setData(projects.data || []);
-        setColumns(projects.columns || []);
+      // First try to find the project in our existing state
+      const existingProject = projects.find(p => p.id === projectId);
+      
+      if (existingProject) {
+        setCurrentProject(existingProject);
+        setData(existingProject.data || []);
+        setColumns(existingProject.columns || []);
+      } else {
+        // If not found in state (rare case), fetch from database
+        const project = await projectService.getProject(userId, projectId);
+        if (project) {
+          setCurrentProject(project);
+          setData(project.data || []);
+          setColumns(project.columns || []);
+          // Update projects list to include this project
+          setProjects(prev => [...prev, project]);
+        }
       }
     } catch (error) {
       console.error('Error opening project:', error);

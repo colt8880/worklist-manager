@@ -135,14 +135,13 @@ export const ProjectList: React.FC<ProjectListProps> = ({
           >
             <ListItemText
               primary={project.name}
+              secondaryTypographyProps={{
+                component: 'div'
+              }}
               secondary={
-                <Box sx={{ display: 'flex', gap: 2, color: 'text.secondary' }}>
-                  <Typography variant="body2">
-                    Records: {project.recordCount}
-                  </Typography>
-                  <Typography variant="body2">
-                    Updated: {formatDate(project.updatedAt)}
-                  </Typography>
+                <Box component="span" sx={{ display: 'flex', gap: 2, color: 'text.secondary', typography: 'body2' }}>
+                  <span>Records: {project.recordCount}</span>
+                  <span>Updated: {formatDate(project.updatedAt)}</span>
                 </Box>
               }
             />
