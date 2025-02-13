@@ -1,48 +1,41 @@
 import React from 'react';
-import { Container, Paper } from '@mui/material';
+import { Box } from '@mui/material';
 import { Header } from './Header';
 import { User } from '../../types/auth';
-import { useProjects } from '../../contexts/useProjects';
 
-interface LayoutProps {
+export interface LayoutProps {
   children: React.ReactNode;
   user: User;
   onLogout: () => void;
+  onTitleClick: () => void;
+  onProjectsClick: () => void;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
-  const { setCurrentProject } = useProjects();
-
-  const handleTitleClick = () => {
-    setCurrentProject(null);
-  };
-
+export const Layout: React.FC<LayoutProps> = ({ 
+  children, 
+  user, 
+  onLogout,
+  onTitleClick,
+  onProjectsClick 
+}) => {
   return (
-    <>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <Header 
         user={user} 
         onLogout={onLogout}
-        onTitleClick={handleTitleClick}
+        onTitleClick={onTitleClick}
+        onProjectsClick={onProjectsClick}
       />
-      <Container 
-        maxWidth={false} 
+      <Box 
+        component="main" 
         sx={{ 
-          pt: '88px', // 64px header height + 24px spacing
-          pb: 4,
-          px: { xs: 2, sm: 3, md: 4 },
-          maxWidth: '2560px',
-          mx: 'auto',
-          minHeight: '100vh',
-          '& .MuiPaper-root': {
-            p: 4,
-            background: 'linear-gradient(to right bottom, #ffffff, #f8fafb)',
-          }
+          flexGrow: 1, 
+          p: 3,
+          mt: '64px' // Add margin-top equal to header height
         }}
       >
-        <Paper sx={{ p: 4 }}>
-          {children}
-        </Paper>
-      </Container>
-    </>
+        {children}
+      </Box>
+    </Box>
   );
 }; 

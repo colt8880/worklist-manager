@@ -1,84 +1,57 @@
-import React, { useState } from 'react';
-import { Box, Typography, IconButton, Menu, MenuItem } from '@mui/material';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import React from 'react';
+import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
 import { User } from '../../types/auth';
+import { UserMenu } from './UserMenu';
 
-interface HeaderProps {
-  user: User;
+export interface HeaderProps {
+  user: User | null;
   onLogout: () => void;
-  onTitleClick?: () => void;
+  onLoginClick?: () => void;
+  onTitleClick: () => void;
+  onProjectsClick: () => void;
 }
 
-export const Header: React.FC<HeaderProps> = ({
-  user,
-  onLogout,
+export const Header: React.FC<HeaderProps> = ({ 
+  user, 
+  onLogout, 
+  onLoginClick,
   onTitleClick,
+  onProjectsClick
 }) => {
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleLogout = () => {
-    handleMenuClose();
-    onLogout();
-  };
-
   return (
-    <Box 
-      component="header"
-      sx={{ 
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 1200,
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        height: '64px',  // Fixed height for header
-        px: 4,
-        bgcolor: 'primary.main',
-        color: '#ffffff',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-      }}
-    >
-      <Typography 
-        variant="h4" 
-        component="h1" 
-        onClick={onTitleClick}
-        sx={{ 
-          color: '#ffffff',
-          fontWeight: 600,
-          letterSpacing: '-0.5px',
-          cursor: 'pointer',
-          '&:hover': {
-            opacity: 0.9,
-          },
-        }}
-      >
-        Worklist Manager
-      </Typography>
-      <Box>
-        <IconButton 
-          onClick={handleMenuOpen}
-          sx={{ color: '#ffffff' }}
+    <AppBar position="fixed" sx={{ borderRadius: 0 }}>
+      <Toolbar>
+        <Typography 
+          variant="h6" 
+          component="div" 
+          sx={{ 
+            flexGrow: 1, 
+            cursor: 'pointer',
+            '&:hover': {
+              opacity: 0.8
+            }
+          }}
+          onClick={onTitleClick}
         >
-          <AccountCircleIcon />
-        </IconButton>
-        <Menu
-          anchorEl={anchorEl}
-          open={Boolean(anchorEl)}
-          onClose={handleMenuClose}
-        >
-          <MenuItem onClick={handleLogout}>Logout</MenuItem>
-        </Menu>
-      </Box>
-    </Box>
+          Worklist Manager
+        </Typography>
+        {user ? (
+          <>
+            <Button 
+              color="inherit" 
+              onClick={onProjectsClick}
+              sx={{ mr: 2 }}
+            >
+              My Projects
+            </Button>
+            <UserMenu user={user} onLogout={onLogout} />
+          </>
+        ) : (
+          <Button color="inherit" onClick={onLoginClick}>
+            Login
+          </Button>
+        )}
+      </Toolbar>
+    </AppBar>
   );
 }; 

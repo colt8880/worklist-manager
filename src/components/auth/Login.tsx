@@ -1,46 +1,49 @@
 import React, { useState } from 'react';
-import { Box, TextField, Button, Typography, Alert } from '@mui/material';
+import { Box, TextField, Button, Typography, Alert, Dialog } from '@mui/material';
 import { LoginCredentials } from '../../types/auth';
 
 interface LoginProps {
+  open: boolean;
+  onClose: () => void;
   onLogin: (credentials: LoginCredentials) => Promise<void>;
   error?: string | null;
 }
 
-export const Login: React.FC<LoginProps> = ({ onLogin, error }) => {
+export const Login: React.FC<LoginProps> = ({ open, onClose, onLogin, error }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onLogin({ username, password });
+    await onLogin({ username, password });
+    // Only clear form if login fails (error handling is managed by parent)
+    if (error) {
+      setUsername('');
+      setPassword('');
+    }
   };
 
   return (
-    <Box
-      sx={{
-        height: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
+    <Dialog 
+      open={open} 
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
     >
       <Box
         component="form"
         onSubmit={handleSubmit}
         sx={{
-          width: '100%',
-          maxWidth: 400,
           p: 4,
-          backgroundColor: 'white',
-          borderRadius: 2,
-          boxShadow: '0 2px 12px rgba(0, 0, 0, 0.08)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
         }}
       >
-        <Typography variant="h4" component="h1" sx={{ mb: 4, textAlign: 'center' }}>
-          Worklist Manager
+        <Typography variant="h4" component="h2" sx={{ mb: 4, textAlign: 'center' }}>
+          Welcome Back
         </Typography>
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+        {error && <Alert severity="error" sx={{ mb: 2, width: '100%' }}>{error}</Alert>}
         <TextField
           fullWidth
           label="Username"
@@ -67,6 +70,6 @@ export const Login: React.FC<LoginProps> = ({ onLogin, error }) => {
           Login
         </Button>
       </Box>
-    </Box>
+    </Dialog>
   );
 }; 
