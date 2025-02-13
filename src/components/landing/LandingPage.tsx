@@ -5,73 +5,176 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
 export const LandingPage: React.FC = () => {
+  const videoRef = React.useRef<HTMLVideoElement>(null);
+
+  React.useEffect(() => {
+    const video = videoRef.current;
+    if (video) {
+      video.addEventListener('error', (e) => {
+        console.error('Video error:', e);
+      });
+      video.addEventListener('loadeddata', () => {
+        console.log('Video loaded successfully');
+      });
+    }
+  }, []);
+
   return (
-    <Box sx={{ pt: 8, pb: 6 }}>
-      <Container maxWidth="lg">
-        {/* Hero Section */}
-        <Box sx={{ textAlign: 'center', mb: 8 }}>
-          <Typography
-            component="h1"
-            variant="h2"
-            color="primary"
-            gutterBottom
-            sx={{ fontWeight: 700, mb: 3 }}
-          >
-            Transform Your Data Workflow
-          </Typography>
-          <Typography variant="h5" color="text.secondary" paragraph sx={{ mb: 4 }}>
-            Effortlessly manage, organize, and collaborate on your data with our intuitive worklist management solution.
-            Say goodbye to spreadsheet chaos and hello to streamlined productivity.
-          </Typography>
-        </Box>
+    <Box sx={{ position: 'relative', width: '100vw', left: '50%', right: '50%', marginLeft: '-50vw', marginRight: '-50vw' }}>
+      {/* Video Background */}
+      <Box
+        sx={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          width: '100%',
+          height: '100%',
+          maxHeight: '600px',
+          overflow: 'hidden',
+          zIndex: 0,
+          bgcolor: 'background.default',
+          '&::after': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'linear-gradient(to bottom, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.7))',
+            pointerEvents: 'none',
+          }
+        }}
+      >
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          loop
+          playsInline
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            transform: 'scale(1.1)',
+            opacity: 1
+          }}
+          onError={(e) => console.error('Video error:', e)}
+        >
+          <source 
+            src="/assets/videos/data-background.mp4" 
+            type="video/mp4"
+            onError={(e) => console.error('Source error:', e)} 
+          />
+          Your browser does not support the video tag.
+        </video>
+      </Box>
 
-        {/* Features Section */}
-        <Grid container spacing={4} sx={{ mb: 8 }}>
-          <Grid item xs={12} md={4}>
-            <Paper elevation={0} sx={{ p: 3, height: '100%', textAlign: 'center' }}>
-              <TableChartIcon color="primary" sx={{ fontSize: 48, mb: 2 }} />
-              <Typography variant="h5" component="h3" gutterBottom>
-                Dynamic Data Tables
-              </Typography>
-              <Typography color="text.secondary">
-                Create and customize tables with powerful features like sorting, filtering, and custom column types.
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <Paper elevation={0} sx={{ p: 3, height: '100%', textAlign: 'center' }}>
-              <CloudUploadIcon color="primary" sx={{ fontSize: 48, mb: 2 }} />
-              <Typography variant="h5" component="h3" gutterBottom>
-                Easy Data Import
-              </Typography>
-              <Typography color="text.secondary">
-                Import your existing data with just a few clicks. Support for various file formats to get you started quickly.
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid item xs={12} md={4}>
-            <Paper elevation={0} sx={{ p: 3, height: '100%', textAlign: 'center' }}>
-              <CheckCircleIcon color="primary" sx={{ fontSize: 48, mb: 2 }} />
-              <Typography variant="h5" component="h3" gutterBottom>
-                Real-time Updates
-              </Typography>
-              <Typography color="text.secondary">
-                Changes are saved automatically and instantly accessible. Never worry about losing your work again.
-              </Typography>
-            </Paper>
-          </Grid>
-        </Grid>
+      <Box sx={{ position: 'relative', zIndex: 1 }}>
+        <Container maxWidth="lg">
+          {/* Hero Section */}
+          <Box sx={{ 
+            textAlign: 'center', 
+            height: '600px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            mb: 0
+          }}>
+            <Typography
+              component="h1"
+              variant="h2"
+              gutterBottom
+              sx={{ 
+                fontWeight: 800, 
+                mb: 3,
+                color: 'primary.main',
+                textShadow: `
+                  2px 2px 0 rgba(255,255,255,0.9),
+                  -2px -2px 0 rgba(255,255,255,0.9),
+                  2px -2px 0 rgba(255,255,255,0.9),
+                  -2px 2px 0 rgba(255,255,255,0.9),
+                  0 0 12px rgba(255,255,255,0.8)
+                `,
+                letterSpacing: '-0.5px',
+                fontSize: { xs: '2.5rem', md: '3.75rem' }
+              }}
+            >
+              Transform Your Workflow
+            </Typography>
+            <Typography 
+              variant="h5" 
+              color="text.primary" 
+              paragraph 
+              sx={{ 
+                mb: 4,
+                maxWidth: '800px',
+                mx: 'auto',
+                fontWeight: 500,
+                color: 'rgba(0, 0, 0, 0.87)',
+                textShadow: '0 1px 4px rgba(255,255,255,0.5)'
+              }}
+            >
+              Effortlessly manage, organize, and collaborate on your operational data with our intuitive worklist management solution.
+              Say goodbye to spreadsheet chaos and hello to streamlined productivity.
+            </Typography>
+          </Box>
 
-        {/* Call to Action */}
-        <Box sx={{ textAlign: 'center' }}>
-          <Typography variant="h4" color="text.primary" gutterBottom>
-            Ready to Get Started?
-          </Typography>
-          <Typography color="text.secondary" paragraph sx={{ mb: 3 }}>
-            Join thousands of users who have already transformed their data management workflow.
-          </Typography>
-        </Box>
-      </Container>
+          {/* Features Section - Now with white background */}
+          <Box sx={{ 
+            py: 5,
+            width: '100%',
+            mt: 0
+          }}>
+            <Grid container spacing={4}>
+              <Grid item xs={12} md={4}>
+                <Paper elevation={0} sx={{ p: 2, height: '100%', textAlign: 'center' }}>
+                  <TableChartIcon color="primary" sx={{ fontSize: 48, mb: 2 }} />
+                  <Typography variant="h5" component="h3" gutterBottom>
+                    Dynamic Data Tables
+                  </Typography>
+                  <Typography color="text.secondary">
+                    Create and customize tables with powerful features like sorting, filtering, and custom column types.
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Paper elevation={0} sx={{ p: 2, height: '100%', textAlign: 'center' }}>
+                  <CloudUploadIcon color="primary" sx={{ fontSize: 48, mb: 2 }} />
+                  <Typography variant="h5" component="h3" gutterBottom>
+                    Easy Data Import
+                  </Typography>
+                  <Typography color="text.secondary">
+                    Import your existing data with just a few clicks. Support for various file formats to get you started quickly.
+                  </Typography>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Paper elevation={0} sx={{ p: 2, height: '100%', textAlign: 'center' }}>
+                  <CheckCircleIcon color="primary" sx={{ fontSize: 48, mb: 2 }} />
+                  <Typography variant="h5" component="h3" gutterBottom>
+                    Real-time Updates
+                  </Typography>
+                  <Typography color="text.secondary">
+                    Changes are saved automatically and instantly accessible. Never worry about losing your work again.
+                  </Typography>
+                </Paper>
+              </Grid>
+            </Grid>
+          </Box>
+
+          {/* Call to Action */}
+          <Box sx={{ textAlign: 'center', paddingTop: 5 }}>
+            <Typography variant="h4" color="text.primary" gutterBottom>
+              Ready to Get Started?
+            </Typography>
+            <Typography color="text.secondary" paragraph sx={{ mb: 3 }}>
+              Join thousands of users who have already transformed their data management workflow.
+            </Typography>
+          </Box>
+        </Container>
+      </Box>
     </Box>
   );
 }; 
