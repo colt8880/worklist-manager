@@ -1,6 +1,7 @@
 export interface User {
   username: string;
-  isAuthenticated: boolean;
+  email: string;
+  id: string;
 }
 
 export interface LoginCredentials {

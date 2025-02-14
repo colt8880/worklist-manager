@@ -10,15 +10,15 @@ interface LoginProps {
 }
 
 export const Login: React.FC<LoginProps> = ({ open, onClose, onLogin, error }) => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onLogin({ username, password });
+    await onLogin({ username: email, password });
     // Only clear form if login fails (error handling is managed by parent)
     if (error) {
-      setUsername('');
+      setEmail('');
       setPassword('');
     }
   };
@@ -46,9 +46,10 @@ export const Login: React.FC<LoginProps> = ({ open, onClose, onLogin, error }) =
         {error && <Alert severity="error" sx={{ mb: 2, width: '100%' }}>{error}</Alert>}
         <TextField
           fullWidth
-          label="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
+          label="Email"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           margin="normal"
           required
         />

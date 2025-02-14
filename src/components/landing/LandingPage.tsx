@@ -1,11 +1,15 @@
-import React from 'react';
-import { Box, Typography, Button, Container, Grid, Paper } from '@mui/material';
+import React, { useState } from 'react';
+import { Box, Typography, Button, Container, Grid, Paper, Stack } from '@mui/material';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import { Register } from '../auth/Register';
+import { useAuth } from '../auth/hooks/useAuth';
 
 export const LandingPage: React.FC = () => {
   const videoRef = React.useRef<HTMLVideoElement>(null);
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
+  const { user } = useAuth();
 
   React.useEffect(() => {
     const video = videoRef.current;
@@ -20,7 +24,15 @@ export const LandingPage: React.FC = () => {
   }, []);
 
   return (
-    <Box sx={{ position: 'relative', width: '100vw', left: '50%', right: '50%', marginLeft: '-50vw', marginRight: '-50vw' }}>
+    <Box sx={{ 
+      position: 'relative', 
+      width: '100vw', 
+      left: '50%', 
+      right: '50%', 
+      marginLeft: '-50vw', 
+      marginRight: '-50vw',
+      ...(user && { mt: '-24px' }) // Compensate for Layout padding when logged in
+    }}>
       {/* Video Background */}
       <Box
         sx={{
@@ -80,7 +92,8 @@ export const LandingPage: React.FC = () => {
             flexDirection: 'column',
             justifyContent: 'center',
             alignItems: 'center',
-            mb: 0
+            mb: 0,
+            ...(user && { pt: '64px' }) // Add padding-top when logged in
           }}>
             <Typography
               component="h1"
@@ -119,6 +132,23 @@ export const LandingPage: React.FC = () => {
               Effortlessly manage, organize, and collaborate on your operational data with our intuitive worklist management solution.
               Say goodbye to spreadsheet chaos and hello to streamlined productivity.
             </Typography>
+            <Button 
+              variant="contained" 
+              size="large"
+              onClick={() => setIsRegisterOpen(true)}
+              sx={{ 
+                px: 4,
+                py: 1.5,
+                fontSize: '1.1rem',
+                fontWeight: 600,
+                boxShadow: '0 4px 14px 0 rgba(0,0,0,0.1)',
+                '&:hover': {
+                  boxShadow: '0 6px 20px 0 rgba(0,0,0,0.15)'
+                }
+              }}
+            >
+              Get Started Free
+            </Button>
           </Box>
 
           {/* Features Section - Now with white background */}
@@ -164,15 +194,11 @@ export const LandingPage: React.FC = () => {
             </Grid>
           </Box>
 
-          {/* Call to Action */}
-          <Box sx={{ textAlign: 'center', paddingTop: 5 }}>
-            <Typography variant="h4" color="text.primary" gutterBottom>
-              Ready to Get Started?
-            </Typography>
-            <Typography color="text.secondary" paragraph sx={{ mb: 3 }}>
-              Join thousands of users who have already transformed their data management workflow.
-            </Typography>
-          </Box>
+          {/* Register Dialog */}
+          <Register 
+            open={isRegisterOpen}
+            onClose={() => setIsRegisterOpen(false)}
+          />
         </Container>
       </Box>
     </Box>
