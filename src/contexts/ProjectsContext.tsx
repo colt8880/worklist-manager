@@ -30,8 +30,15 @@ export const ProjectsProvider: React.FC<{
   username: string;
 }> = ({ children, username }) => {
   const projectsData = useProjectsHook(username);
+
+  // Ensure the userId is properly passed through the context
+  const contextValue = {
+    ...projectsData,
+    userId: username // Explicitly set the userId to match the username
+  };
+
   return (
-    <ProjectsContext.Provider value={projectsData}>
+    <ProjectsContext.Provider value={contextValue} data-projects-context>
       {children}
     </ProjectsContext.Provider>
   );

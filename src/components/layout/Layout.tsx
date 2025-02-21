@@ -3,6 +3,7 @@ import { Box } from '@mui/material';
 import { Header } from './Header';
 import { User } from '../../types/auth';
 import { useLocation } from 'react-router-dom';
+import { useProjects } from '../../contexts/useProjects';
 
 export interface LayoutProps {
   children: React.ReactNode;
@@ -21,6 +22,12 @@ export const Layout: React.FC<LayoutProps> = ({
 }) => {
   const location = useLocation();
   const isLandingPage = location.pathname === '/';
+  const { setCurrentProject } = useProjects();
+
+  const handleProjectsClick = () => {
+    setCurrentProject(null);
+    onProjectsClick();
+  };
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
@@ -28,7 +35,7 @@ export const Layout: React.FC<LayoutProps> = ({
         user={user} 
         onLogout={onLogout}
         onTitleClick={onTitleClick}
-        onProjectsClick={onProjectsClick}
+        onProjectsClick={handleProjectsClick}
       />
       <Box 
         component="main" 

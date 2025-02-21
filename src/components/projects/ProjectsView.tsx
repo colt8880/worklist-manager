@@ -5,6 +5,7 @@ import { ProjectContent } from './ProjectContent';
 import { NewProjectDialog } from './NewProjectDialog';
 import { Box, CircularProgress, Alert } from '@mui/material';
 import { projectService } from '../../services/projectService';
+import { useProjectNavigation } from '../../hooks/useProjectNavigation';
 
 export const ProjectsView: React.FC = () => {
   const {
@@ -28,6 +29,7 @@ export const ProjectsView: React.FC = () => {
   } = useProjects();
 
   const [isNewProjectDialogOpen, setIsNewProjectDialogOpen] = useState(false);
+  const { goToProjects } = useProjectNavigation();
 
   if (isLoading) {
     return (
@@ -91,7 +93,7 @@ export const ProjectsView: React.FC = () => {
       onUpdateData={updateCell}
       currentProject={currentProject}
       setCurrentProject={setCurrentProject}
-      onBackToProjects={() => setCurrentProject(null)}
+      onBackToProjects={goToProjects}
       userId={userId}
     />
   );

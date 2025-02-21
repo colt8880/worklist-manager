@@ -95,21 +95,29 @@ export const useProjects = (userId: string) => {
   }, [userId]);
 
   const createProject = async (name: string) => {
-    const newProject: Project = {
-      id: crypto.randomUUID(),
-      name,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      userId,
-      data: [],
-      columns: [],
-      customColumns: {},
-    };
+    try {
+      console.log('Creating project with userId:', userId);
+      const newProject: Project = {
+        id: crypto.randomUUID(),
+        name,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        userId,
+        data: [],
+        columns: [],
+        customColumns: {},
+      };
 
-    await projectService.saveProject(userId, newProject);
-    setProjects(prev => [...prev, newProject]);
-    setCurrentProject(newProject);
-    clearData();
+      const savedProject = await projectService.saveProject(userId, newProject);
+      console.log('Project saved successfully:', savedProject);
+      setProjects(prev => [...prev, savedProject]);
+      setCurrentProject(savedProject);
+      clearData();
+    } catch (err) {
+      console.error('Error creating project:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create project');
+      throw err;
+    }
   };
 
   const deleteProject = async (projectId: string) => {
@@ -286,6 +294,7 @@ export const useProjects = (userId: string) => {
     columns,
     isLoading,
     error,
+    userId,
     createProject,
     deleteProject,
     openProject,
@@ -295,8 +304,6 @@ export const useProjects = (userId: string) => {
     editProject,
     setProjects,
     setColumns,
-    addCustomColumn,
     updateCell,
-    userId,
   };
 }; 
