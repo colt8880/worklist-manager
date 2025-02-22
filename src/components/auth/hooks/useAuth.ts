@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { User, LoginCredentials } from '../../../types/auth';
+import { useState, useCallback } from 'react';
 import { supabase } from '../../../config/supabase';
+import { User, LoginCredentials, AuthState } from '../../../types/auth';
 
 const isValidEmail = (email: string) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -25,100 +25,98 @@ const getAuthErrorMessage = (error: any): string => {
   return error?.message || 'An unexpected error occurred';
 };
 
+/**
+ * Custom hook for handling authentication
+ * Provides login, logout, and auth state management
+ * 
+ * @returns {Object} Authentication methods and state
+ */
 export const useAuth = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [authError, setAuthError] = useState<string | null>(null);
+  const [state, setState] = useState<AuthState>({
+    user: null,
+    authError: null
+  });
 
-  const login = async (credentials: LoginCredentials) => {
+  const setUser = useCallback((user: User | null) => {
+    setState(prev => ({ ...prev, user, authError: null }));
+  }, []);
+
+  const setAuthError = useCallback((error: string | null) => {
+    setState(prev => ({ ...prev, authError: error }));
+  }, []);
+
+  const login = useCallback(async (credentials: LoginCredentials) => {
     try {
-      const email = isValidEmail(credentials.username) ? credentials.username : `${credentials.username}@example.com`;
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password: credentials.password,
+        email: credentials.username,
+        password: credentials.password
       });
 
       if (error) throw error;
 
       if (data.user) {
-        setUser({ 
-          username: credentials.username,
-          email: data.user.email || '',
-          id: data.user.id 
+        setUser({
+          id: data.user.id,
+          username: data.user.email || '',
+          email: data.user.email || ''
         });
-        setAuthError(null);
       }
     } catch (error) {
-      console.error('Login error:', error);
-      const errorMessage = getAuthErrorMessage(error);
-      setAuthError(errorMessage);
-      throw error; // Throw the original error
-    }
-  };
-
-  const register = async (credentials: LoginCredentials) => {
-    try {
-      console.log('Starting registration for:', credentials.username);
-      const email = isValidEmail(credentials.username) ? credentials.username : `${credentials.username}@example.com`;
-      
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password: credentials.password,
-        options: {
-          data: {
-            username: credentials.username,
-          },
-        },
-      });
-
-      if (error) {
-        console.error('Signup error:', error);
-        throw error;
-      }
-
-      // Check if user already exists (Supabase returns a user object with no identities array for existing users)
-      if (data.user && !data.user.identities?.length) {
-        const error = new Error('This email is already registered. Please try logging in instead.');
-        error.name = 'UserExistsError';
-        throw error;
-      }
-
-      if (data.user) {
-        console.log('User created successfully:', data.user);
-        setUser({ 
-          username: credentials.username,
-          email: data.user.email || '',
-          id: data.user.id 
-        });
-        setAuthError(null);
-      }
-    } catch (error) {
-      console.error('Registration error:', error);
-      const errorMessage = getAuthErrorMessage(error);
-      setAuthError(errorMessage);
+      setAuthError('Invalid email or password. Please try again.');
       throw error;
     }
-  };
+  }, [setUser, setAuthError]);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       setUser(null);
-      setAuthError(null);
     } catch (error) {
-      console.error('Logout error:', error);
-      const errorMessage = getAuthErrorMessage(error);
-      setAuthError(errorMessage);
-      throw error; // Throw the original error
+      if (error instanceof Error) {
+        setAuthError(error.message);
+      } else {
+        setAuthError('An error occurred during logout');
+      }
+      throw error;
     }
-  };
+  }, [setUser, setAuthError]);
+
+  const register = useCallback(async (credentials: LoginCredentials) => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: credentials.username,
+        password: credentials.password
+      });
+
+      if (error) throw error;
+
+      if (data.user?.identities?.length === 0) {
+        throw new Error('This email is already registered. Please try logging in instead.');
+      }
+
+      if (data.user) {
+        setUser({
+          id: data.user.id,
+          username: data.user.email || '',
+          email: data.user.email || ''
+        });
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        setAuthError(error.message);
+      } else {
+        setAuthError('An error occurred during registration');
+      }
+      throw error;
+    }
+  }, [setUser, setAuthError]);
 
   return {
-    user,
-    authError,
+    ...state,
     login,
-    register,
     logout,
-    setUser,
+    register,
+    setUser
   };
 }; 

@@ -1,16 +1,19 @@
 // src/App.tsx
 import React, { useState } from 'react';
-import { ThemeProvider } from '@mui/material/styles';
-import { theme } from './theme/theme';
-import { Layout } from './components/layout/Layout';
-import { ProjectsProvider } from './contexts/ProjectsContext';
-import { ProjectsView } from './components/projects/ProjectsView';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from './components/auth/hooks/useAuth';
-import { Login } from './components/auth/Login';
-import { LandingPage } from './components/landing/LandingPage';
-import { Header } from './components/layout/Header';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { AppProviders } from './providers/AppProviders';
+import { AppRoutes } from './routes/AppRoutes';
+import { AuthLayout } from './components/auth/AuthLayout';
+import { AuthenticatedLayout } from './components/layout/AuthenticatedLayout';
+import { LoginCredentials } from './types/auth';
 
+/**
+ * AppContent component handles the main application logic and layout
+ * It manages authentication state and navigation
+ * 
+ * @returns {JSX.Element} The main application content
+ */
 const AppContent: React.FC = () => {
   const { user, authError, login, logout } = useAuth();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
@@ -24,66 +27,57 @@ const AppContent: React.FC = () => {
     navigate('/projects');
   };
 
-  const handleLogin = async (credentials: any) => {
+  const handleLogin = async (credentials: LoginCredentials) => {
     try {
       await login(credentials);
-      setIsLoginOpen(false); // Close the login dialog
-      navigate('/projects'); // Navigate to projects page
+      setIsLoginOpen(false);
+      navigate('/projects');
     } catch (error) {
-      // Error handling is already managed by useAuth
       console.error('Login error:', error);
     }
   };
 
   if (!user) {
     return (
-      <>
-        <Header 
-          user={user} 
-          onLogout={logout} 
-          onLoginClick={() => setIsLoginOpen(true)}
-          onTitleClick={handleTitleClick}
-          onProjectsClick={handleProjectsClick}
-        />
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-        <Login 
-          open={isLoginOpen}
-          onClose={() => setIsLoginOpen(false)}
-          onLogin={handleLogin}
-          error={authError}
-        />
-      </>
+      <AuthLayout
+        user={user}
+        authError={authError}
+        isLoginOpen={isLoginOpen}
+        onLoginClick={() => setIsLoginOpen(true)}
+        onLogin={handleLogin}
+        onLogout={logout}
+        onTitleClick={handleTitleClick}
+        onProjectsClick={handleProjectsClick}
+        onLoginClose={() => setIsLoginOpen(false)}
+      >
+        <AppRoutes user={user} />
+      </AuthLayout>
     );
   }
 
   return (
-    <ProjectsProvider username={user.username}>
-      <Layout 
-        user={user} 
-        onLogout={logout}
-        onTitleClick={handleTitleClick}
-        onProjectsClick={handleProjectsClick}
-      >
-        <Routes>
-          <Route path="/" element={<Navigate to="/projects" replace />} />
-          <Route path="/projects" element={<ProjectsView />} />
-          <Route path="*" element={<Navigate to="/projects" replace />} />
-        </Routes>
-      </Layout>
-    </ProjectsProvider>
+    <AuthenticatedLayout
+      user={user}
+      onLogout={logout}
+      onTitleClick={handleTitleClick}
+      onProjectsClick={handleProjectsClick}
+    >
+      <AppRoutes user={user} />
+    </AuthenticatedLayout>
   );
 };
 
+/**
+ * App component is the root component of the application
+ * It provides necessary context providers and renders the main content
+ * 
+ * @returns {JSX.Element} The root application component
+ */
 const App: React.FC = () => {
   return (
-    <BrowserRouter>
-      <ThemeProvider theme={theme}>
-        <AppContent />
-      </ThemeProvider>
-    </BrowserRouter>
+    <AppProviders>
+      <AppContent />
+    </AppProviders>
   );
 };
 
