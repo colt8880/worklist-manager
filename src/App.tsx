@@ -10,7 +10,6 @@ import { Login } from './components/auth/Login';
 import { LandingPage } from './components/landing/LandingPage';
 import { Header } from './components/layout/Header';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
-import { AuthTest } from './components/auth/__tests__/AuthTest';
 
 const AppContent: React.FC = () => {
   const { user, authError, login, logout } = useAuth();
@@ -48,7 +47,6 @@ const AppContent: React.FC = () => {
         />
         <Routes>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/auth-test" element={<AuthTest />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
         <Login 
@@ -72,7 +70,6 @@ const AppContent: React.FC = () => {
         <Routes>
           <Route path="/" element={<Navigate to="/projects" replace />} />
           <Route path="/projects" element={<ProjectsView />} />
-          <Route path="/auth-test" element={<AuthTest />} />
           <Route path="*" element={<Navigate to="/projects" replace />} />
         </Routes>
       </Layout>

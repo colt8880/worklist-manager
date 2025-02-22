@@ -164,6 +164,7 @@ export const Register: React.FC<RegisterProps> = ({
             required
             disabled={isSubmitting}
             error={!!error && error.toString().includes('password')}
+            inputProps={{ 'data-testid': 'password-input' }}
           />
           
           <TextField
@@ -175,6 +176,7 @@ export const Register: React.FC<RegisterProps> = ({
             required
             disabled={isSubmitting}
             error={!!error && error.toString().includes('password')}
+            inputProps={{ 'data-testid': 'confirm-password-input' }}
           />
 
           <Button

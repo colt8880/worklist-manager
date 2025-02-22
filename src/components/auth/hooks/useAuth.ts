@@ -119,5 +119,6 @@ export const useAuth = () => {
     login,
     register,
     logout,
+    setUser,
   };
 }; 

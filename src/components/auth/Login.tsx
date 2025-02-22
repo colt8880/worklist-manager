@@ -15,11 +15,16 @@ export const Login: React.FC<LoginProps> = ({ open, onClose, onLogin, error }) =
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onLogin({ username: email, password });
-    // Only clear form if login fails (error handling is managed by parent)
-    if (error) {
-      setEmail('');
-      setPassword('');
+    if (!email || !password) return;
+    
+    try {
+      await onLogin({ username: email, password });
+      if (!error) {
+        setEmail('');
+        setPassword('');
+      }
+    } catch (err) {
+      // Error handling is managed by parent
     }
   };
 
@@ -61,6 +66,7 @@ export const Login: React.FC<LoginProps> = ({ open, onClose, onLogin, error }) =
           onChange={(e) => setPassword(e.target.value)}
           margin="normal"
           required
+          inputProps={{ 'data-testid': 'password-input' }}
         />
         <Button
           type="submit"
