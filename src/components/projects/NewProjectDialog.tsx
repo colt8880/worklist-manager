@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -20,6 +20,12 @@ export const NewProjectDialog: React.FC<NewProjectDialogProps> = ({
   onCreate,
 }) => {
   const [name, setName] = useState('');
+
+  useEffect(() => {
+    if (open) {
+      setName('');
+    }
+  }, [open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

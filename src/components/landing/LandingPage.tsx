@@ -103,13 +103,6 @@ export const LandingPage: React.FC = () => {
                 fontWeight: 800, 
                 mb: 3,
                 color: 'primary.main',
-                textShadow: `
-                  2px 2px 0 rgba(255,255,255,0.9),
-                  -2px -2px 0 rgba(255,255,255,0.9),
-                  2px -2px 0 rgba(255,255,255,0.9),
-                  -2px 2px 0 rgba(255,255,255,0.9),
-                  0 0 12px rgba(255,255,255,0.8)
-                `,
                 letterSpacing: '-0.5px',
                 fontSize: { xs: '2.5rem', md: '3.75rem' }
               }}

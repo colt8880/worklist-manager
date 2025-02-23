@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Project, ProjectSummary, CustomColumn } from '../../../types/project';
 import { DataRecord } from '../../../types';
 import { projectService } from '../../../services/projectService';
@@ -20,6 +20,16 @@ const mockProjects: Project[] = [
   }
 ];
 
+interface ProjectsCache {
+  userId: string | null;
+  projects: Project[];
+  timestamp: number;
+}
+
+/**
+ * Custom hook for managing projects state and operations
+ * @param userId - The ID of the current user
+ */
 export const useProjects = (userId: string) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
@@ -30,75 +40,55 @@ export const useProjects = (userId: string) => {
   const { showNotification } = useNotification();
 
   // Cache for projects data
-  const projectsCache = React.useRef<{
-    userId: string | null;
-    projects: Project[];
-    timestamp: number;
-  }>({
+  const projectsCache = useRef<ProjectsCache>({
     userId: null,
     projects: [],
     timestamp: 0
   });
 
-  // Load projects on mount
-  useEffect(() => {
-    console.log('useEffect triggered with userId:', userId);
-    let isMounted = true;
+  /**
+   * Loads projects for the current user
+   */
+  const loadProjects = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
 
-    const loadProjects = async () => {
-      if (!userId || !isMounted) return;
+      // Check cache validity (5 minutes)
+      const now = Date.now();
+      const cacheValid = projectsCache.current.userId === userId && 
+                        (now - projectsCache.current.timestamp) < 300000;
 
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        // Check cache validity (5 minute expiry)
-        const now = Date.now();
-        const cacheIsValid = 
-          projectsCache.current.userId === userId && 
-          projectsCache.current.projects.length > 0 &&
-          (now - projectsCache.current.timestamp) < 5 * 60 * 1000;
-
-        if (cacheIsValid) {
-          console.log('Using cached projects data');
-          setProjects(projectsCache.current.projects);
-        } else {
-          console.log('Starting to load projects...');
-          const loadedProjects = await projectService.getProjects(userId);
-          if (isMounted) {
-            console.log('Setting projects in state');
-            setProjects(loadedProjects);
-            // Update cache
-            projectsCache.current = {
-              userId,
-              projects: loadedProjects,
-              timestamp: now
-            };
-          }
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err instanceof Error ? err.message : 'Failed to load projects');
-          console.error('Error loading projects:', err);
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+      if (cacheValid) {
+        setProjects(projectsCache.current.projects);
+        setIsLoading(false);
+        return;
       }
-    };
 
-    loadProjects();
+      const fetchedProjects = await projectService.getProjects(userId);
+      setProjects(fetchedProjects);
+      
+      // Update cache
+      projectsCache.current = {
+        userId,
+        projects: fetchedProjects,
+        timestamp: now
+      };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load projects';
+      setError(errorMessage);
+      showNotification(errorMessage, 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    return () => {
-      console.log('useEffect cleanup - unmounting');
-      isMounted = false;
-    };
-  }, [userId]);
-
+  /**
+   * Creates a new project
+   * @param name - The name of the new project
+   */
   const createProject = async (name: string) => {
     try {
-      console.log('Creating project with userId:', userId);
       const newProject: Project = {
         id: crypto.randomUUID(),
         name,
@@ -111,194 +101,169 @@ export const useProjects = (userId: string) => {
       };
 
       const savedProject = await projectService.saveProject(userId, newProject);
-      console.log('Project saved successfully:', savedProject);
       setProjects(prev => [...prev, savedProject]);
       setCurrentProject(savedProject);
       clearData();
+      showNotification('Project created successfully', 'success');
     } catch (err) {
-      console.error('Error creating project:', err);
-      setError(err instanceof Error ? err.message : 'Failed to create project');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create project';
+      setError(errorMessage);
+      showNotification(errorMessage, 'error');
       throw err;
     }
   };
 
+  /**
+   * Deletes a project
+   * @param projectId - The ID of the project to delete
+   */
   const deleteProject = async (projectId: string) => {
     if (window.confirm('Are you sure you want to delete this project?')) {
-      await projectService.deleteProject(userId, projectId);
-      setProjects(prev => prev.filter(p => p.id !== projectId));
-      if (currentProject?.id === projectId) {
-        setCurrentProject(null);
-        clearData();
+      try {
+        await projectService.deleteProject(userId, projectId);
+        setProjects(prev => prev.filter(p => p.id !== projectId));
+        if (currentProject?.id === projectId) {
+          setCurrentProject(null);
+          clearData();
+        }
+        showNotification('Project deleted successfully', 'success');
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Failed to delete project';
+        showNotification(errorMessage, 'error');
       }
     }
   };
 
+  /**
+   * Updates project data
+   * @param newData - The new data records
+   * @param newColumns - The new columns
+   */
+  const updateProjectData = async (newData: DataRecord[], newColumns: string[]) => {
+    if (!currentProject) return;
+
+    try {
+      const updatedProject = {
+        ...currentProject,
+        data: newData,
+        columns: newColumns,
+        updatedAt: new Date().toISOString()
+      };
+
+      const savedProject = await projectService.saveProject(userId, updatedProject);
+      setCurrentProject(savedProject);
+      setData(newData);
+      setColumns(newColumns);
+      // Update the project in the projects array
+      setProjects(prev => prev.map(p => p.id === savedProject.id ? savedProject : p));
+      showNotification('Project data updated successfully', 'success');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update project data';
+      showNotification(errorMessage, 'error');
+    }
+  };
+
+  /**
+   * Clears the current project data
+   */
+  const clearData = () => {
+    setData([]);
+    setColumns([]);
+  };
+
+  /**
+   * Opens a project
+   * @param projectId - The ID of the project to open
+   */
   const openProject = async (projectId: string) => {
     try {
       // First try to find the project in our existing state
       const existingProject = projects.find(p => p.id === projectId);
       
-      if (existingProject) {
-        setCurrentProject(existingProject);
-        setData(existingProject.data || []);
-        setColumns(existingProject.columns || []);
-      } else {
-        // If not found in state (rare case), fetch from database
-        const project = await projectService.getProject(userId, projectId);
-        if (project) {
-          setCurrentProject(project);
-          setData(project.data || []);
-          setColumns(project.columns || []);
-          // Update projects list to include this project
-          setProjects(prev => [...prev, project]);
+      // Always fetch the latest data from the server
+      const latestProject = await projectService.getProject(userId, projectId);
+      
+      if (latestProject) {
+        setCurrentProject(latestProject);
+        setData(latestProject.data);
+        setColumns(latestProject.columns);
+        
+        // Update the project in our projects array if it has changed
+        if (existingProject && JSON.stringify(existingProject) !== JSON.stringify(latestProject)) {
+          setProjects(prev => prev.map(p => p.id === projectId ? latestProject : p));
         }
+      } else {
+        showNotification('Project not found', 'error');
       }
-    } catch (error) {
-      console.error('Error opening project:', error);
-      // Optionally handle error
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to open project';
+      showNotification(errorMessage, 'error');
     }
   };
 
-  const updateProjectData = async (uploadedData: DataRecord[], detectedColumns: string[]) => {
-    if (currentProject) {
-      const updatedProject = {
-        ...currentProject,
-        data: uploadedData,
-        columns: detectedColumns,
-        updatedAt: new Date().toISOString()
-      };
+  /**
+   * Edits a project's name
+   * @param projectId - The ID of the project to edit
+   * @param name - The new name for the project
+   */
+  const editProject = async (projectId: string, name: string) => {
+    try {
+      const project = projects.find(p => p.id === projectId);
+      if (!project) return;
 
-      // Save to localStorage
-      await projectService.saveProject(userId, updatedProject);
-      
-      // Update local state
-      setCurrentProject(updatedProject);
-      setProjects(prev => 
-        prev.map(p => p.id === currentProject.id ? updatedProject : p)
-      );
-      setData(uploadedData);
-      setColumns(detectedColumns);
-    }
-  };
-
-  const clearData = async () => {
-    if (currentProject) {
-      const updatedProject = {
-        ...currentProject,
-        data: [],
-        columns: [],
-        updatedAt: new Date().toISOString()
-      };
-
-      // Save cleared state to localStorage
-      await projectService.saveProject(userId, updatedProject);
-      
-      // Update local state
-      setCurrentProject(updatedProject);
-      setProjects(prev => 
-        prev.map(p => p.id === currentProject.id ? updatedProject : p)
-      );
-    }
-    setData([]);
-    setColumns([]);
-  };
-
-  const addCustomColumn = async (column: CustomColumn) => {
-    if (currentProject) {
-      // Initialize data for checkbox columns with false values
-      const updatedData = column.type === 'checkbox'
-        ? data.map(row => ({ ...row, [column.name]: false }))
-        : data;
-
-      const updatedProject = {
-        ...currentProject,
-        customColumns: { 
-          ...currentProject.customColumns, 
-          [column.name]: column 
-        },
-        columns: [...currentProject.columns, column.name],
-        data: updatedData,
-        updatedAt: new Date().toISOString()
-      };
-
-      // Save to database
-      await projectService.saveProject(userId, updatedProject);
-      
-      // Update local state
-      setCurrentProject(updatedProject);
-      setProjects(prev => 
-        prev.map(p => p.id === currentProject.id ? updatedProject : p)
-      );
-      setColumns([...columns, column.name]);
-      setData(updatedData);
-    }
-  };
-
-  const editProject = async (projectId: string, newName: string) => {
-    const project = projects.find(p => p.id === projectId);
-    if (project) {
       const updatedProject = {
         ...project,
-        name: newName,
+        name,
         updatedAt: new Date().toISOString()
       };
 
-      // Save to localStorage
       await projectService.saveProject(userId, updatedProject);
-      
-      // Update local state
-      setProjects(prev => 
-        prev.map(p => p.id === projectId ? updatedProject : p)
-      );
-      
+      setProjects(prev => prev.map(p => p.id === projectId ? updatedProject : p));
       if (currentProject?.id === projectId) {
         setCurrentProject(updatedProject);
       }
+      showNotification('Project renamed successfully', 'success');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to rename project';
+      showNotification(errorMessage, 'error');
     }
   };
 
+  /**
+   * Updates a single cell in the current project
+   * @param rowIndex - The index of the row to update
+   * @param column - The column name
+   * @param value - The new value
+   */
   const updateCell = async (rowIndex: number, column: string, value: any) => {
-    if (currentProject) {
-      try {
-        // Immediately update the UI with the new value
-        const newData = [...data];
-        const customColumn = currentProject.customColumns[column];
-        const processedValue = customColumn?.type === 'checkbox' ? Boolean(value) : value;
-        newData[rowIndex] = { ...newData[rowIndex], [column]: processedValue };
-        
-        // Update local state immediately for optimistic UI
-        setData(newData);
+    if (!currentProject) return;
 
-        // Prepare the project update
-        const updatedProject = {
-          ...currentProject,
-          data: newData,
-          updatedAt: new Date().toISOString()
-        };
+    try {
+      const newData = data.map((row, index) => 
+        index === rowIndex ? { ...row, [column]: value } : row
+      );
+      
+      const updatedProject = {
+        ...currentProject,
+        data: newData,
+        updatedAt: new Date().toISOString()
+      };
 
-        // Save to database in the background
-        const savedProject = await projectService.saveProject(userId, updatedProject);
-        
-        // Update other state with the saved project data
-        setCurrentProject(savedProject);
-        setProjects(prev => 
-          prev.map(p => p.id === currentProject.id ? savedProject : p)
-        );
-      } catch (error) {
-        console.error('Failed to update cell:', error);
-        
-        // Revert the optimistic update on error
-        const originalData = [...data];
-        setData(originalData);
-        
-        // Show error notification
-        showNotification(
-          'Failed to save changes. The value has been reverted.',
-          'error'
-        );
-      }
+      const savedProject = await projectService.saveProject(userId, updatedProject);
+      setCurrentProject(savedProject);
+      setData(savedProject.data);
+      // Update the project in the projects array
+      setProjects(prev => prev.map(p => p.id === savedProject.id ? savedProject : p));
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update cell';
+      showNotification(errorMessage, 'error');
     }
   };
+
+  // Load projects on mount and when userId changes
+  useEffect(() => {
+    loadProjects();
+  }, [userId]);
 
   return {
     projects,
