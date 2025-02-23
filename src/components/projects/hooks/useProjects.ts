@@ -4,6 +4,7 @@ import { DataRecord } from '../../../types';
 import { projectService } from '../../../services/projectService';
 import { supabase } from '../../../config/supabase';
 import React from 'react';
+import { useNotification } from '../../../contexts/NotificationContext';
 
 // Mock project data - replace with API calls in production
 const mockProjects: Project[] = [
@@ -26,6 +27,7 @@ export const useProjects = (userId: string) => {
   const [columns, setColumns] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { showNotification } = useNotification();
 
   // Cache for projects data
   const projectsCache = React.useRef<{
@@ -258,31 +260,42 @@ export const useProjects = (userId: string) => {
   const updateCell = async (rowIndex: number, column: string, value: any) => {
     if (currentProject) {
       try {
-        // Update the data
+        // Immediately update the UI with the new value
         const newData = [...data];
         const customColumn = currentProject.customColumns[column];
-        
-        // Handle checkbox values explicitly
         const processedValue = customColumn?.type === 'checkbox' ? Boolean(value) : value;
         newData[rowIndex] = { ...newData[rowIndex], [column]: processedValue };
+        
+        // Update local state immediately for optimistic UI
+        setData(newData);
 
+        // Prepare the project update
         const updatedProject = {
           ...currentProject,
           data: newData,
           updatedAt: new Date().toISOString()
         };
 
-        // Save to database
+        // Save to database in the background
         const savedProject = await projectService.saveProject(userId, updatedProject);
         
-        // Update local state with the saved project data
+        // Update other state with the saved project data
         setCurrentProject(savedProject);
         setProjects(prev => 
           prev.map(p => p.id === currentProject.id ? savedProject : p)
         );
-        setData(savedProject.data);
       } catch (error) {
         console.error('Failed to update cell:', error);
+        
+        // Revert the optimistic update on error
+        const originalData = [...data];
+        setData(originalData);
+        
+        // Show error notification
+        showNotification(
+          'Failed to save changes. The value has been reverted.',
+          'error'
+        );
       }
     }
   };
