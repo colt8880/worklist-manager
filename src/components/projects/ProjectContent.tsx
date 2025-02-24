@@ -49,10 +49,14 @@ export const ProjectContent: React.FC<ProjectContentProps> = ({
     setAnchorEl(null);
   };
 
-  const handleFileUpload = (uploadedData: DataRecord[]) => {
-    if (uploadedData.length > 0) {
-      const detectedColumns = Object.keys(uploadedData[0]);
-      onDataUpdate(uploadedData, detectedColumns);
+  const handleFileUpload = async (uploadedData: DataRecord[]) => {
+    try {
+      if (uploadedData.length > 0) {
+        const detectedColumns = Object.keys(uploadedData[0]);
+        await onDataUpdate(uploadedData, detectedColumns);
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error);
     }
   };
 

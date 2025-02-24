@@ -41,15 +41,41 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileUpload }) => {
           return;
         }
 
-        if (!results.data || results.data.length === 0) {
+        if (!results.data || results.data.length === 0 || !Array.isArray(results.data)) {
           setError('No data found in file');
           setUploading(false);
           return;
         }
 
-        onFileUpload(results.data as DataRecord[]);
-        setUploading(false);
-        setProgress(100);
+        // Ensure the first row is an object with properties
+        const firstRow = results.data[0];
+        if (typeof firstRow !== 'object' || firstRow === null) {
+          setError('Invalid CSV format: First row is not a valid object');
+          setUploading(false);
+          return;
+        }
+
+        // Now we can safely get the headers
+        const headers = Object.keys(firstRow);
+        const invalidRows = results.data.some(row => 
+          typeof row === 'object' && row !== null && 
+          !headers.every(header => Object.prototype.hasOwnProperty.call(row, header))
+        );
+
+        if (invalidRows) {
+          setError('Invalid CSV format: Some rows are missing columns');
+          setUploading(false);
+          return;
+        }
+
+        try {
+          onFileUpload(results.data as DataRecord[]);
+          setUploading(false);
+          setProgress(100);
+        } catch (err) {
+          setError('Failed to process file data');
+          setUploading(false);
+        }
       },
       error: (error) => {
         setError(`Error reading file: ${error.message}`);

@@ -5,6 +5,7 @@ import { projectService } from '../../../services/projectService';
 import { supabase } from '../../../config/supabase';
 import React from 'react';
 import { useNotification } from '../../../contexts/NotificationContext';
+import { useNavigate } from 'react-router-dom';
 
 // Mock project data - replace with API calls in production
 const mockProjects: Project[] = [
@@ -38,6 +39,7 @@ export const useProjects = (userId: string) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { showNotification } = useNotification();
+  const navigate = useNavigate();
 
   // Cache for projects data
   const projectsCache = useRef<ProjectsCache>({
@@ -122,6 +124,7 @@ export const useProjects = (userId: string) => {
       try {
         await projectService.deleteProject(userId, projectId);
         setProjects(prev => prev.filter(p => p.id !== projectId));
+        // Only clear current project if we're viewing the project being deleted
         if (currentProject?.id === projectId) {
           setCurrentProject(null);
           clearData();
@@ -160,6 +163,7 @@ export const useProjects = (userId: string) => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update project data';
       showNotification(errorMessage, 'error');
+      throw err; // Propagate the error to handle it in the UI
     }
   };
 
