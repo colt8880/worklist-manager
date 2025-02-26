@@ -22,11 +22,12 @@ export const Layout: React.FC<LayoutProps> = ({
 }) => {
   const location = useLocation();
   const isLandingPage = location.pathname === '/';
-  const { setCurrentProject } = useProjects();
+  const { goToProjectsList } = useProjects();
 
-  const handleProjectsClick = () => {
-    setCurrentProject(null);
-    onProjectsClick();
+  const handleTitleClick = () => {
+    if (!isLandingPage) {
+      goToProjectsList();
+    }
   };
 
   return (
@@ -34,8 +35,8 @@ export const Layout: React.FC<LayoutProps> = ({
       <Header 
         user={user} 
         onLogout={onLogout}
-        onTitleClick={onTitleClick}
-        onProjectsClick={handleProjectsClick}
+        onTitleClick={handleTitleClick}
+        onProjectsClick={goToProjectsList}
       />
       <Box 
         component="main" 

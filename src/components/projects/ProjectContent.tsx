@@ -18,8 +18,8 @@ interface ProjectContentProps {
   customColumns: Record<string, CustomColumn>;
   onAddCustomColumn: (column: CustomColumn) => void;
   onUpdateData: (rowIndex: number, column: string, value: any) => void;
-  currentProject?: Project;
-  setCurrentProject: (project: Project) => void;
+  currentProject: Project | null;
+  setCurrentProject: (project: Project | null) => void;
   onBackToProjects: () => void;
   userId: string;
 }

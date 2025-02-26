@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Project, ProjectSummary, CustomColumn } from '../../../types/project';
 import { DataRecord } from '../../../types';
 import { projectService } from '../../../services/projectService';
@@ -88,8 +88,9 @@ export const useProjects = (userId: string) => {
   /**
    * Creates a new project
    * @param name - The name of the new project
+   * @returns The created project
    */
-  const createProject = async (name: string) => {
+  const createProject = async (name: string): Promise<Project> => {
     try {
       const newProject: Project = {
         id: crypto.randomUUID(),
@@ -107,6 +108,7 @@ export const useProjects = (userId: string) => {
       setCurrentProject(savedProject);
       clearData();
       showNotification('Project created successfully', 'success');
+      return savedProject;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to create project';
       setError(errorMessage);
@@ -179,31 +181,62 @@ export const useProjects = (userId: string) => {
    * Opens a project
    * @param projectId - The ID of the project to open
    */
-  const openProject = async (projectId: string) => {
+  const openProject = useCallback(async (projectId: string) => {
+    console.log('=== openProject Called ===');
+    console.log('Opening project with ID:', projectId);
+    console.log('Current projects state:', projects.map(p => p.id));
     try {
-      // First try to find the project in our existing state
+      // Only set loading if we don't have the project yet
       const existingProject = projects.find(p => p.id === projectId);
+      console.log('Existing project found:', existingProject?.id);
       
+      if (!existingProject) {
+        console.log('Setting loading state: true');
+        setIsLoading(true);
+      }
+      setError(null);
+
       // Always fetch the latest data from the server
+      console.log('Fetching latest project data from server');
       const latestProject = await projectService.getProject(userId, projectId);
       
       if (latestProject) {
+        console.log('Latest project data received, updating state...');
+        console.log('Setting currentProject:', latestProject.id);
         setCurrentProject(latestProject);
+        console.log('Setting data:', latestProject.data.length, 'records');
         setData(latestProject.data);
+        console.log('Setting columns:', latestProject.columns);
         setColumns(latestProject.columns);
         
-        // Update the project in our projects array if it has changed
-        if (existingProject && JSON.stringify(existingProject) !== JSON.stringify(latestProject)) {
-          setProjects(prev => prev.map(p => p.id === projectId ? latestProject : p));
-        }
+        // Update the project in our projects array
+        console.log('Updating projects array...');
+        setProjects(prev => {
+          const exists = prev.some(p => p.id === projectId);
+          if (exists) {
+            console.log('Updating existing project in array');
+            return prev.map(p => p.id === projectId ? latestProject : p);
+          } else {
+            console.log('Adding new project to array');
+            return [...prev, latestProject];
+          }
+        });
       } else {
+        console.log('Project not found on server');
+        setError('Project not found');
         showNotification('Project not found', 'error');
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to open project';
+      console.error('Error in openProject:', errorMessage);
+      setError(errorMessage);
       showNotification(errorMessage, 'error');
+    } finally {
+      console.log('Setting loading state: false');
+      setIsLoading(false);
+      console.log('=== openProject Complete ===');
     }
-  };
+  }, [projects, userId]);
 
   /**
    * Edits a project's name
@@ -287,5 +320,6 @@ export const useProjects = (userId: string) => {
     setProjects,
     setColumns,
     updateCell,
+    setIsLoading,
   };
 }; 

@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '../../../config/supabase';
 import { User, LoginCredentials, AuthState } from '../../../types/auth';
 
@@ -45,6 +45,38 @@ export const useAuth = () => {
     setState(prev => ({ ...prev, authError: error }));
   }, []);
 
+  // Add session restoration on mount
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser({
+          id: session.user.id,
+          username: session.user.email || '',
+          email: session.user.email || ''
+        });
+      }
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser({
+          id: session.user.id,
+          username: session.user.email || '',
+          email: session.user.email || ''
+        });
+      } else {
+        setUser(null);
+      }
+    });
+
+    // Cleanup subscription
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [setUser]);
+
   const login = useCallback(async (credentials: LoginCredentials) => {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -53,6 +85,12 @@ export const useAuth = () => {
       });
 
       if (error) throw error;
+
+      // Set session expiry to 24 hours after successful login
+      await supabase.auth.setSession({
+        access_token: data.session?.access_token || '',
+        refresh_token: data.session?.refresh_token || ''
+      });
 
       if (data.user) {
         setUser({

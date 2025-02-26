@@ -29,6 +29,7 @@ export const AppRoutes: React.FC<AppRoutesProps> = ({ user }) => {
     <Routes>
       <Route path="/" element={<Navigate to="/projects" replace />} />
       <Route path="/projects" element={<ProjectsView />} />
+      <Route path="/projects/:projectId" element={<ProjectsView />} />
       <Route path="*" element={<Navigate to="/projects" replace />} />
     </Routes>
   );
