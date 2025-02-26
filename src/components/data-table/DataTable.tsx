@@ -7,6 +7,8 @@ import {
   GridColumnMenu,
   GridRowModel,
   useGridApiRef,
+  GridPreProcessEditCellProps,
+  GridCellEditStopParams,
 } from '@mui/x-data-grid';
 import { Checkbox, Select, MenuItem, Box, Tooltip, Divider } from '@mui/material';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -113,16 +115,25 @@ export const DataTable: React.FC<DataTableProps> = ({
         editable: !customColumn || customColumn.type === 'text',
         type: columnType,
         disableColumnMenu: false,
-        renderHeader: () => (
+        description: customColumn?.helperText,
+        renderHeader: (params) => (
           <Tooltip 
             title={customColumn?.helperText || ''} 
             placement="top"
           >
-            <div style={{ width: '100%', cursor: 'help' }}>
-              {customColumn?.label || column}
+            <div style={{ 
+              width: '100%', 
+              cursor: 'help',
+              fontWeight: 700
+            }}>
+              {params.colDef.headerName}
             </div>
           </Tooltip>
         ),
+        preProcessEditCellProps: (params: GridPreProcessEditCellProps) => {
+          const hasError = !params.props.value && customColumn?.type === 'text';
+          return { ...params.props, error: hasError };
+        },
       };
 
       // Add checkbox specific styling and handling
@@ -160,6 +171,8 @@ export const DataTable: React.FC<DataTableProps> = ({
       if (customColumn?.type === 'select') {
         return {
           ...baseColumnDef,
+          type: 'singleSelect',
+          valueOptions: customColumn.options || [],
           renderCell: (params: GridRenderCellParams) => (
             <Select
               value={params.value || ''}
@@ -168,6 +181,13 @@ export const DataTable: React.FC<DataTableProps> = ({
               }
               size="small"
               fullWidth
+              MenuProps={{
+                PaperProps: {
+                  style: {
+                    maxHeight: 200
+                  }
+                }
+              }}
             >
               {customColumn.options?.map((option) => (
                 <MenuItem key={option} value={option}>
@@ -212,6 +232,9 @@ export const DataTable: React.FC<DataTableProps> = ({
           '& .MuiDataGrid-columnHeader': {
             borderRight: '1px solid rgba(224, 224, 224, 1)',
             backgroundColor: 'rgba(0, 0, 0, 0.02)',
+            '& .MuiDataGrid-columnHeaderTitle': {
+              fontWeight: 700
+            }
           },
         }}
       />
