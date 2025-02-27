@@ -2,6 +2,7 @@ import { CustomColumn } from './project';
 import { CSSProperties } from 'react';
 
 export interface DataRecord {
+  id?: string | number;
   [key: string]: any;
 }
 
@@ -15,10 +16,10 @@ export interface Styles {
 }
 
 export interface DataTableProps {
-  data: Record<string, any>[];
+  data: DataRecord[];
   columns: string[];
   customColumns: Record<string, CustomColumn>;
-  onUpdateCell: (rowId: number, columnName: string, value: any) => void;
+  onUpdateCell: (rowId: string | number, columnName: string, value: any) => void;
   onDeleteColumn?: (columnName: string) => void;
 }
 
@@ -30,5 +31,5 @@ export interface RowProps {
   columnWidths: Record<string, number>;
   totalWidth: number;
   customColumns: Record<string, CustomColumn>;
-  onUpdateCell: (rowIndex: number, column: string, value: any) => void;
+  onUpdateCell: (rowId: string | number, column: string, value: any) => void;
 } 

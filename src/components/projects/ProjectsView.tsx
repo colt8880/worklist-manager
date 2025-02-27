@@ -188,7 +188,7 @@ export const ProjectsView: React.FC = () => {
         setColumns([...columns, column.name]);
         setProjects(prev => prev.map(p => p.id === currentProject.id ? updatedProject : p));
       }}
-      onUpdateData={updateCell}
+      onUpdateData={(rowId: string | number, column: string, value: any) => updateCell(rowId, column, value)}
       currentProject={currentProject}
       setCurrentProject={setCurrentProject}
       onBackToProjects={handleBackToProjects}

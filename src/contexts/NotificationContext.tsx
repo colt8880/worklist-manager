@@ -1,10 +1,15 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { Alert, Snackbar } from '@mui/material';
+import { Alert, Snackbar, Button } from '@mui/material';
 
 type NotificationType = 'success' | 'error' | 'info' | 'warning';
 
 interface NotificationContextType {
-  showNotification: (message: string, type: NotificationType) => void;
+  showNotification: (
+    message: string, 
+    type: NotificationType,
+    retryAction?: () => void,
+    retryLabel?: string
+  ) => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -25,10 +30,19 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [type, setType] = useState<NotificationType>('info');
+  const [retryAction, setRetryAction] = useState<(() => void) | undefined>();
+  const [retryLabel, setRetryLabel] = useState<string | undefined>();
 
-  const showNotification = useCallback((message: string, type: NotificationType) => {
+  const showNotification = useCallback((
+    message: string, 
+    type: NotificationType,
+    retryAction?: () => void,
+    retryLabel?: string
+  ) => {
     setMessage(message);
     setType(type);
+    setRetryAction(retryAction);
+    setRetryLabel(retryLabel);
     setOpen(true);
   }, []);
 
@@ -37,6 +51,11 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       return;
     }
     setOpen(false);
+  };
+
+  const handleRetry = () => {
+    handleClose();
+    retryAction?.();
   };
 
   return (
@@ -48,7 +67,22 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         onClose={handleClose}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert onClose={handleClose} severity={type} sx={{ width: '100%' }}>
+        <Alert 
+          onClose={handleClose} 
+          severity={type} 
+          sx={{ width: '100%' }}
+          action={
+            retryAction && (
+              <Button 
+                color="inherit" 
+                size="small" 
+                onClick={handleRetry}
+              >
+                {retryLabel || 'Retry'}
+              </Button>
+            )
+          }
+        >
           {message}
         </Alert>
       </Snackbar>

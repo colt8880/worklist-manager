@@ -1,13 +1,12 @@
 import { DataRecord } from './index';
+import { GridColDef } from '@mui/x-data-grid';
 
-export type ColumnType = 'text' | 'checkbox' | 'select';
+export type ColumnType = 'string' | 'boolean' | 'singleSelect';
 
-export interface CustomColumn {
+export interface CustomColumn extends Omit<GridColDef, 'field'> {
   name: string;
   type: ColumnType;
-  label: string;
-  helperText?: string;
-  options?: string[];  // For select type
+  options?: string[];  // For singleSelect type
 }
 
 export interface Project {

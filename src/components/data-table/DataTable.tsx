@@ -2,16 +2,19 @@ import React, { useMemo } from 'react';
 import {
   DataGrid,
   GridColDef,
-  GridRenderCellParams,
   GridColumnMenuProps,
   GridColumnMenu,
   GridRowModel,
   useGridApiRef,
-  GridPreProcessEditCellProps,
   GridCellEditStopParams,
+  GridRenderCellParams,
+  GridEventListener,
+  GridCellEditStopReasons,
+  GridCellParams,
 } from '@mui/x-data-grid';
-import { Checkbox, Select, MenuItem, Box, Tooltip, Divider } from '@mui/material';
+import { MenuItem, Box, Divider, Checkbox } from '@mui/material';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import { CustomColumn } from '../../types/project';
 import { DataTableProps } from '../../types/datatable';
 
@@ -21,10 +24,7 @@ function CustomColumnMenu(props: GridColumnMenuProps) {
   const handleDeleteColumn = (event: React.MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
-    console.log('Delete column clicked:', colDef.field);
     if (window.confirm('Are you sure you want to delete this column? This action cannot be undone.')) {
-      console.log('Confirmed deletion for column:', colDef.field);
-      // Access onDeleteColumn through the window object
       const customEvent = new CustomEvent('deleteColumn', { detail: colDef.field });
       window.dispatchEvent(customEvent);
     }
@@ -81,140 +81,202 @@ export const DataTable: React.FC<DataTableProps> = ({
     };
   }, [onDeleteColumn]);
 
-  // Add IDs to rows if they don't exist
-  const rowsWithIds = useMemo(() => 
-    data.map((row, index) => ({
-      id: row.id ?? index,
-      ...row
-    })),
-    [data]
-  );
+  // Add IDs to rows if they don't exist and ensure they're strings
+  const rowsWithIds = useMemo(() => {
+    console.log('Processing rows with IDs:', {
+      originalData: data,
+      dataLength: data.length,
+      sampleIds: data.slice(0, 3).map((row, idx) => ({ 
+        originalId: row.id, 
+        index: idx,
+        type: typeof row.id 
+      }))
+    });
 
-  const columnDefs: GridColDef[] = useMemo(() => 
-    columns.map((column): GridColDef => {
-      const customColumn = customColumns[column];
-      let columnType: 'string' | 'number' | 'boolean' | 'date' | undefined;
-      
-      // Map custom column types to MUI types
-      switch (customColumn?.type) {
-        case 'checkbox':
-          columnType = 'boolean';
-          break;
-        case 'select':
-        case 'text':
-        default:
-          columnType = 'string';
-          break;
-      }
-
-      const baseColumnDef: GridColDef = {
-        field: column,
-        headerName: customColumn?.label || column,
-        flex: 1,
-        minWidth: 150,
-        editable: !customColumn || customColumn.type === 'text',
-        type: columnType,
-        disableColumnMenu: false,
-        description: customColumn?.helperText,
-        renderHeader: (params) => (
-          <Tooltip 
-            title={customColumn?.helperText || ''} 
-            placement="top"
-          >
-            <div style={{ 
-              width: '100%', 
-              cursor: 'help',
-              fontWeight: 700
-            }}>
-              {params.colDef.headerName}
-            </div>
-          </Tooltip>
-        ),
-        preProcessEditCellProps: (params: GridPreProcessEditCellProps) => {
-          const hasError = !params.props.value && customColumn?.type === 'text';
-          return { ...params.props, error: hasError };
-        },
+    const processedRows = data.map((row, index) => {
+      // Always use the array index as the ID to match DataGrid's expectations
+      const processedRow = {
+        ...row,
+        id: String(index)
       };
+      
+      // Log a few rows for debugging
+      if (index < 3) {
+        console.log('Processed row:', {
+          index,
+          originalId: row.id,
+          newId: processedRow.id,
+          originalType: typeof row.id,
+          newType: typeof processedRow.id,
+          row: processedRow
+        });
+      }
+      
+      return processedRow;
+    });
 
-      // Add checkbox specific styling and handling
-      if (customColumn?.type === 'checkbox') {
-        return {
-          ...baseColumnDef,
-          align: 'left',
-          headerAlign: 'left',
-          renderCell: (params: GridRenderCellParams) => (
-            <Box 
-              onClick={(e) => e.stopPropagation()}
-              sx={{ 
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'flex-start',
-                width: '100%'
-              }}
-            >
-              <Checkbox
-                checked={Boolean(params.value)}
-                onChange={(e) => {
-                  e.stopPropagation();
-                  const newValue = e.target.checked;
-                  onUpdateCell(params.row.id, column, newValue);
-                }}
-                onClick={(e) => e.stopPropagation()}
-                sx={{ padding: '0px' }}
-              />
-            </Box>
-          ),
-        };
+    console.log('First few processed rows:', processedRows.slice(0, 3));
+    return processedRows;
+  }, [data]);
+
+  // Process row updates
+  const handleProcessRowUpdate = async (newRow: any, oldRow: any) => {
+    console.log('Processing row update:', {
+      newRow,
+      oldRow,
+      newRowId: newRow.id,
+      oldRowId: oldRow.id,
+      newRowIdType: typeof newRow.id,
+      oldRowIdType: typeof oldRow.id,
+      allRowIds: rowsWithIds.slice(0, 5).map(r => ({ 
+        id: r.id, 
+        type: typeof r.id
+      }))
+    });
+
+    try {
+      // Find the changed field
+      const changedField = Object.keys(newRow).find(
+        field => newRow[field] !== oldRow[field]
+      );
+
+      if (!changedField) {
+        console.log('No changes detected in row update');
+        return oldRow;
       }
 
-      // Add select specific handling
-      if (customColumn?.type === 'select') {
-        return {
-          ...baseColumnDef,
-          type: 'singleSelect',
-          valueOptions: customColumn.options || [],
-          renderCell: (params: GridRenderCellParams) => (
-            <Select
-              value={params.value || ''}
-              onChange={(e) => 
-                onUpdateCell(params.row.id, column, e.target.value)
-              }
-              size="small"
-              fullWidth
-              MenuProps={{
-                PaperProps: {
-                  style: {
-                    maxHeight: 200
-                  }
-                }
-              }}
-            >
-              {customColumn.options?.map((option) => (
-                <MenuItem key={option} value={option}>
-                  {option}
-                </MenuItem>
-              ))}
-            </Select>
-          ),
-        };
-      }
+      const stringId = String(newRow.id);
+      console.log('Detected change in field:', {
+        field: changedField,
+        oldValue: oldRow[changedField],
+        newValue: newRow[changedField],
+        rowId: stringId,
+        rowIdType: typeof stringId,
+        matchingRow: rowsWithIds.find(r => r.id === stringId)
+      });
 
-      // Default column definition
-      return baseColumnDef;
-    }),
-    [columns, customColumns]
-  );
-
-  const handleProcessRowUpdate = (newRow: GridRowModel, oldRow: GridRowModel) => {
-    const changedField = Object.keys(newRow).find(key => newRow[key] !== oldRow[key]);
-    if (changedField) {
-      onUpdateCell(newRow.id as number, changedField, newRow[changedField]);
+      // Call onUpdateCell with the changed field
+      await onUpdateCell(stringId, changedField, newRow[changedField]);
+      console.log('Cell update successful');
+      return newRow;
+    } catch (error) {
+      console.error('Error processing row update:', error);
+      return oldRow;
     }
-    return newRow;
   };
 
+  // Handle checkbox changes
+  const handleCheckboxChange = async (params: GridCellParams) => {
+    const stringId = String(params.id);
+    console.log('Handling checkbox change:', {
+      ...params,
+      rowId: stringId,
+      originalRowId: params.id,
+      rowIdType: typeof stringId,
+      originalRowIdType: typeof params.id,
+      row: params.row,
+      matchingRow: rowsWithIds.find(r => String(r.id) === stringId)
+    });
+    
+    try {
+      const newValue = !params.value;
+      console.log('New checkbox value:', newValue);
+      
+      // Update through the standard row update process
+      const oldRow = params.row;
+      const newRow = { ...oldRow, [params.field]: newValue };
+      
+      const result = await handleProcessRowUpdate(newRow, oldRow);
+      console.log('Checkbox update result:', {
+        success: !!result,
+        resultId: result?.id,
+        resultIdType: typeof result?.id,
+        result
+      });
+      
+      return result;
+    } catch (error) {
+      console.error('Error handling checkbox change:', error);
+      return params.row;
+    }
+  };
+
+  // Column definitions with checkbox handling
+  const columnDefs = useMemo<GridColDef[]>(() => {
+    return columns.map(colName => {
+      const customColumn = customColumns[colName];
+      
+      // Base column definition
+      const baseColDef: GridColDef = {
+        field: colName,
+        headerName: customColumn?.headerName || colName,
+        flex: 1,
+        minWidth: 150,
+        editable: true,
+        description: customColumn?.description || ''
+      };
+
+      // If it's a custom column, add the specific configuration
+      if (customColumn) {
+        if (customColumn.type === 'boolean') {
+          return {
+            ...baseColDef,
+            type: 'boolean' as const,
+            renderCell: (params: GridRenderCellParams) => (
+              <Checkbox
+                checked={Boolean(params.value)}
+                onChange={() => handleCheckboxChange(params)}
+              />
+            )
+          } satisfies GridColDef;
+        }
+
+        if (customColumn.type === 'singleSelect') {
+          return {
+            ...baseColDef,
+            type: 'singleSelect' as const,
+            valueOptions: customColumn.options || [],
+            renderCell: (params: GridRenderCellParams) => (
+              <Box
+                sx={{
+                  width: '100%',
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  cursor: 'pointer',
+                  padding: 0
+                  }
+                }
+                onClick={(event) => {
+                  event.stopPropagation();
+                  apiRef.current.startCellEditMode({ id: params.id, field: params.field });
+                }}
+              >
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', flex: 1, paddingLeft: '8px' }}>
+                  {params.value || ''}
+                </span>
+                <ArrowDropDownIcon 
+                  sx={{ 
+                    color: 'rgba(0, 0, 0, 0.54)',
+                    marginLeft: 1,
+                    marginRight: 1,
+                    fontSize: 20,
+                    flexShrink: 0
+                  }} 
+                />
+              </Box>
+            )
+          } satisfies GridColDef;
+        }
+      }
+
+      return baseColDef;
+    });
+  }, [columns, customColumns, handleCheckboxChange]);
+
   return (
-    <Box sx={{ width: '100%' }}>
+    <Box sx={{ width: '100%', height: 400 }}>
       <DataGrid
         apiRef={apiRef}
         rows={rowsWithIds}
@@ -222,9 +284,13 @@ export const DataTable: React.FC<DataTableProps> = ({
         autoHeight
         disableRowSelectionOnClick
         processRowUpdate={handleProcessRowUpdate}
+        onProcessRowUpdateError={(error) => {
+          console.error('Error in row update:', error);
+        }}
         slots={{
           columnMenu: CustomColumnMenu,
         }}
+        editMode="cell"
         sx={{
           '& .MuiDataGrid-cell': {
             borderRight: '1px solid rgba(224, 224, 224, 1)',

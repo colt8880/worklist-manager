@@ -29,10 +29,13 @@ export const AddColumnDialog: React.FC<AddColumnDialogProps> = ({
 }) => {
   const [column, setColumn] = useState<CustomColumn>({
     name: '',
-    type: 'text',
-    label: '',
-    helperText: '',
+    type: 'string',
+    headerName: '',
+    description: '',
     options: [],
+    flex: 1,
+    minWidth: 150,
+    editable: true,
   });
   const [optionsText, setOptionsText] = useState('');
 
@@ -40,10 +43,21 @@ export const AddColumnDialog: React.FC<AddColumnDialogProps> = ({
     if (column.name.trim() && !existingColumns.includes(column.name)) {
       const finalColumn = {
         ...column,
-        options: optionsText.split(',').map(opt => opt.trim()).filter(Boolean)
+        headerName: column.headerName || column.name,
+        options: column.type === 'singleSelect' ? optionsText.split(',').map(opt => opt.trim()).filter(Boolean) : undefined,
+        valueOptions: column.type === 'singleSelect' ? optionsText.split(',').map(opt => opt.trim()).filter(Boolean) : undefined,
       };
       onAdd(finalColumn);
-      setColumn({ name: '', type: 'text', label: '', helperText: '', options: [] });
+      setColumn({
+        name: '',
+        type: 'string',
+        headerName: '',
+        description: '',
+        options: [],
+        flex: 1,
+        minWidth: 150,
+        editable: true,
+      });
       setOptionsText('');
       onClose();
     }
@@ -62,6 +76,12 @@ export const AddColumnDialog: React.FC<AddColumnDialogProps> = ({
             helperText={existingColumns.includes(column.name) ? 'Column name already exists' : ''}
             required
           />
+          <TextField
+            label="Column Header"
+            value={column.headerName || ''}
+            onChange={(e) => setColumn({ ...column, headerName: e.target.value })}
+            helperText="Display name for the column (optional)"
+          />
           <FormControl fullWidth>
             <InputLabel>Column Type</InputLabel>
             <Select
@@ -69,12 +89,12 @@ export const AddColumnDialog: React.FC<AddColumnDialogProps> = ({
               label="Column Type"
               onChange={(e) => setColumn({ ...column, type: e.target.value as ColumnType })}
             >
-              <MenuItem value="text">Text</MenuItem>
-              <MenuItem value="checkbox">Checkbox</MenuItem>
-              <MenuItem value="select">Select List</MenuItem>
+              <MenuItem value="string">Text</MenuItem>
+              <MenuItem value="boolean">Checkbox</MenuItem>
+              <MenuItem value="singleSelect">Select List</MenuItem>
             </Select>
           </FormControl>
-          {column.type === 'select' && (
+          {column.type === 'singleSelect' && (
             <TextField
               label="Options"
               value={optionsText}
@@ -84,18 +104,12 @@ export const AddColumnDialog: React.FC<AddColumnDialogProps> = ({
             />
           )}
           <TextField
-            label="Helper Text"
-            value={column.helperText}
-            onChange={(e) => setColumn({ ...column, helperText: e.target.value })}
+            label="Description"
+            value={column.description || ''}
+            onChange={(e) => setColumn({ ...column, description: e.target.value })}
+            helperText="Tooltip text shown on hover (optional)"
             multiline
             rows={2}
-          />
-          <TextField
-            label="Column Label"
-            value={column.label}
-            onChange={(e) => setColumn({ ...column, label: e.target.value })}
-            fullWidth
-            margin="normal"
           />
         </Box>
       </DialogContent>

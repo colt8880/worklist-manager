@@ -18,7 +18,7 @@ interface ProjectsContextType {
   editProject: (projectId: string, name: string) => void;
   setProjects: React.Dispatch<React.SetStateAction<Project[]>>;
   setColumns: React.Dispatch<React.SetStateAction<string[]>>;
-  updateCell: (rowIndex: number, column: string, value: any) => void;
+  updateCell: (rowId: string | number, column: string, value: any) => void;
   isLoading: boolean;
   setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
   error: string | null;

@@ -268,32 +268,95 @@ export const useProjects = (userId: string) => {
 
   /**
    * Updates a single cell in the current project
-   * @param rowIndex - The index of the row to update
+   * @param rowId - The ID of the row to update (string index from DataGrid)
    * @param column - The column name
    * @param value - The new value
    */
-  const updateCell = async (rowIndex: number, column: string, value: any) => {
-    if (!currentProject) return;
+  const updateCell = async (rowId: string | number, column: string, value: any) => {
+    if (!currentProject) {
+      console.error('No current project found');
+      return;
+    }
 
+    // Convert rowId to number since we're using array indices
+    const rowIndex = Number(rowId);
+    console.log('Starting cell update:', {
+      projectId: currentProject.id,
+      rowId,
+      rowIndex,
+      column,
+      value,
+      dataLength: data.length,
+      isValidIndex: rowIndex >= 0 && rowIndex < data.length
+    });
+
+    // Get row by index
+    const row = data[rowIndex];
+    if (!row) {
+      console.error('Row not found:', {
+        rowId,
+        rowIndex,
+        dataLength: data.length,
+        firstFewRows: data.slice(0, 3)
+      });
+      return;
+    }
+    
     try {
-      const newData = data.map((row, index) => 
-        index === rowIndex ? { ...row, [column]: value } : row
-      );
-      
+      console.log('Found row for update:', {
+        rowId,
+        rowIndex,
+        row,
+        oldValue: row[column],
+        newValue: value
+      });
+
+      // Optimistically update the UI
+      const newData = [...data];
+      newData[rowIndex] = { ...row, [column]: value };
+      setData(newData);
+
+      // Prepare the updated project
       const updatedProject = {
         ...currentProject,
         data: newData,
         updatedAt: new Date().toISOString()
       };
 
+      console.log('Saving project update:', {
+        projectId: updatedProject.id,
+        dataLength: updatedProject.data.length,
+        updatedAt: updatedProject.updatedAt,
+        updatedRow: newData[rowIndex]
+      });
+
+      // Save to database
       const savedProject = await projectService.saveProject(userId, updatedProject);
-      setCurrentProject(savedProject);
-      setData(savedProject.data);
+      console.log('Project saved successfully:', {
+        projectId: savedProject.id,
+        savedDataLength: savedProject.data.length,
+        savedRow: savedProject.data[rowIndex]
+      });
+      
       // Update the project in the projects array
-      setProjects(prev => prev.map(p => p.id === savedProject.id ? savedProject : p));
+      setProjects(prev => prev.map(p => p.id === currentProject.id ? savedProject : p));
+      setCurrentProject(savedProject);
+      console.log('Local state updated successfully');
     } catch (err) {
+      console.error('Error updating cell:', err);
+      // Revert the optimistic update
+      const newData = [...data];
+      newData[rowIndex] = row;
+      setData(newData);
+
+      // Show error with retry option
       const errorMessage = err instanceof Error ? err.message : 'Failed to update cell';
-      showNotification(errorMessage, 'error');
+      showNotification(
+        errorMessage,
+        'error',
+        () => updateCell(rowId, column, value),
+        'Try Again'
+      );
     }
   };
 

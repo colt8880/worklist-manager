@@ -17,7 +17,7 @@ interface ProjectContentProps {
   onClearData: () => void;
   customColumns: Record<string, CustomColumn>;
   onAddCustomColumn: (column: CustomColumn) => void;
-  onUpdateData: (rowIndex: number, column: string, value: any) => void;
+  onUpdateData: (rowId: string | number, column: string, value: any) => void;
   currentProject: Project | null;
   setCurrentProject: (project: Project | null) => void;
   onBackToProjects: () => void;
