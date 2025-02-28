@@ -17,6 +17,7 @@ import { MenuItem, Box, Divider, Checkbox } from '@mui/material';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import { CustomColumn } from '../../types/project';
+import _ from 'lodash';
 
 interface DataTableProps {
   data: any[];
@@ -102,46 +103,35 @@ export const DataTable: React.FC<DataTableProps> = ({
   }, [data]);
 
   // Handle row updates
-  const handleProcessRowUpdate = async (newRow: GridRowModel, oldRow: GridRowModel) => {
-    try {
-      // Find the changed field
-      const changedField = Object.keys(newRow).find(
-        field => field !== 'id' && newRow[field] !== oldRow[field]
-      );
+  const processRowUpdate = React.useCallback(
+    async (newRow: GridRowModel, oldRow: GridRowModel) => {
+      try {
+        // Skip update if no changes
+        if (_.isEqual(newRow, oldRow)) {
+          return oldRow;
+        }
 
-      if (!changedField) {
-        console.log('No changes detected in row update');
+        const result = await onUpdateCell(newRow.id, Object.keys(newRow)[0], newRow[Object.keys(newRow)[0]]);
+        if (!result) {
+          return oldRow;
+        }
+
+        const finalResult = {
+          ...result,
+          isNew: false
+        };
+
+        return finalResult;
+      } catch (error) {
+        console.error('[DataTable] Error processing row update:', {
+          error,
+          rowId: newRow.id
+        });
         return oldRow;
       }
-
-      console.log('Processing row update:', {
-        rowId: newRow.id,
-        field: changedField,
-        oldValue: oldRow[changedField],
-        newValue: newRow[changedField]
-      });
-
-      // Call onUpdateCell with the changed field and wait for the result
-      const result = await onUpdateCell(newRow.id, changedField, newRow[changedField]);
-      
-      if (!result) {
-        console.log('Update failed, returning old row');
-        return oldRow;
-      }
-
-      // Ensure the returned result has an ID
-      const finalResult = {
-        ...result,
-        id: result.id || newRow.id
-      };
-
-      console.log('Update successful, returning row:', finalResult);
-      return finalResult;
-    } catch (error) {
-      console.error('Error processing row update:', error);
-      return oldRow;
-    }
-  };
+    },
+    [onUpdateCell]
+  );
 
   // Add event listener for column deletion
   React.useEffect(() => {
@@ -157,35 +147,28 @@ export const DataTable: React.FC<DataTableProps> = ({
   }, [onDeleteColumn]);
 
   // Handle checkbox changes
-  const handleCheckboxChange = async (params: GridCellParams) => {
-    const stringId = String(params.id);
-    console.log('Handling checkbox change:', {
-      ...params,
-      rowId: stringId,
-      originalRowId: params.id,
-      rowIdType: typeof stringId,
-      originalRowIdType: typeof params.id,
-      row: params.row,
-      matchingRow: rowsWithIds.find(r => String(r.id) === stringId)
-    });
-    
-    try {
-      const newValue = !params.value;
-      console.log('New checkbox value:', newValue);
-      
-      // Update through the standard row update process
-      const oldRow = params.row;
-      const newRow = { ...oldRow, [params.field]: newValue };
-      
-      const result = await onUpdateCell(stringId, params.field, newValue);
-      console.log('Checkbox update result:', result);
-      
-      return result || oldRow;
-    } catch (error) {
-      console.error('Error handling checkbox change:', error);
-      return params.row;
-    }
-  };
+  const handleCheckboxChange = React.useCallback(
+    async (params: GridCellParams) => {
+      try {
+        const { id, field, value } = params;
+        const newValue = !value;
+        
+        const result = await onUpdateCell(id, field, newValue);
+        if (!result) {
+          return false;
+        }
+        
+        return true;
+      } catch (error) {
+        console.error('[DataTable] Error handling checkbox change:', {
+          error,
+          params
+        });
+        return false;
+      }
+    },
+    [onUpdateCell]
+  );
 
   // Column definitions with checkbox handling
   const columnDefs = useMemo<GridColDef[]>(() => {
@@ -273,7 +256,7 @@ export const DataTable: React.FC<DataTableProps> = ({
         columns={columnDefs}
         autoHeight
         disableRowSelectionOnClick
-        processRowUpdate={handleProcessRowUpdate}
+        processRowUpdate={processRowUpdate}
         onProcessRowUpdateError={(error) => {
           console.error('Error in row update:', error);
         }}

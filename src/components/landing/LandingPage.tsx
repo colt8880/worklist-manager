@@ -90,25 +90,24 @@ const LandingPage: React.FC = () => {
       >
         <video
           ref={videoRef}
+          className="landing-video"
           autoPlay
-          muted
           loop
+          muted
           playsInline
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            transform: 'scale(1.1)',
-            opacity: 1
-          }}
-          onError={(e) => console.error('Video error:', e)}
+          onError={(e) => console.error('[Landing] Video playback error:', {
+            error: e,
+            src: e.currentTarget.src
+          })}
         >
-          <source 
-            src="/assets/videos/data-background.mp4" 
+          <source
+            src={process.env.PUBLIC_URL + '/assets/landing-video.mp4'}
             type="video/mp4"
-            onError={(e) => console.error('Source error:', e)} 
+            onError={(e) => console.error('[Landing] Video source error:', {
+              error: e,
+              src: e.currentTarget.src
+            })}
           />
-          Your browser does not support the video tag.
         </video>
       </Box>
 

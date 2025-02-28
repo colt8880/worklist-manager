@@ -4,7 +4,6 @@ import { Project } from '../types/project';
 export const projectService = {
   getProjects: async (username: string): Promise<Project[]> => {
     try {
-      console.log('[projectService] Starting getProjects for:', username);
       const { data: userData } = await supabase.auth.getUser();
       
       if (!userData?.user) {
@@ -17,7 +16,7 @@ export const projectService = {
         .eq('userId', userData.user.id);
 
       if (error) {
-        console.error('[projectService] Supabase error details:', {
+        console.error('[projectService] Error fetching projects:', {
           message: error.message,
           details: error.details,
           hint: error.hint
@@ -25,7 +24,6 @@ export const projectService = {
         throw error;
       }
       
-      console.log('[projectService] Successfully fetched projects. Count:', data?.length);
       return data || [];
     } catch (error) {
       console.error('[projectService] Error in getProjects:', error);
@@ -41,18 +39,6 @@ export const projectService = {
         throw new Error('No authenticated user found');
       }
 
-      console.log('Current auth state:', {
-        user: userData.user,
-        session: (await supabase.auth.getSession()).data.session
-      });
-
-      console.log('Saving project with data:', {
-        username,
-        userId: userData.user.id,
-        projectId: project.id,
-        projectName: project.name
-      });
-
       // Ensure the data is properly formatted for Postgres JSONB
       const projectData = {
         id: project.id,
@@ -65,16 +51,6 @@ export const projectService = {
         updatedAt: new Date().toISOString()
       };
 
-      console.log('Formatted project data:', projectData);
-
-      // First, verify we can read from the table
-      const { data: testData, error: testError } = await supabase
-        .from('projects')
-        .select('*')
-        .limit(1);
-      
-      console.log('Test read result:', { data: testData, error: testError });
-
       const { data, error } = await supabase
         .from('projects')
         .upsert(projectData)
@@ -82,22 +58,21 @@ export const projectService = {
         .single();
 
       if (error) {
-        console.error('Supabase error details:', {
+        console.error('[projectService] Error saving project:', {
           message: error.message,
           details: error.details,
           hint: error.hint,
           code: error.code,
-          user: userData.user.id
+          projectId: project.id
         });
         throw error;
       }
 
-      console.log('Successfully saved project:', data);
       return data;
     } catch (error) {
-      console.error('Error in saveProject:', error);
+      console.error('[projectService] Error in saveProject:', error);
       if (error instanceof Error) {
-        console.error('Error details:', {
+        console.error('[projectService] Error details:', {
           name: error.name,
           message: error.message,
           stack: error.stack
@@ -120,7 +95,13 @@ export const projectService = {
       .eq('id', projectId)
       .eq('userId', userData.user.id);
 
-    if (error) throw error;
+    if (error) {
+      console.error('[projectService] Error deleting project:', {
+        projectId,
+        error
+      });
+      throw error;
+    }
   },
 
   getProject: async (username: string, projectId: string): Promise<Project | null> => {
@@ -139,13 +120,16 @@ export const projectService = {
         .single();
 
       if (error) {
-        console.error('Error fetching project:', error);
+        console.error('[projectService] Error fetching project:', {
+          projectId,
+          error
+        });
         throw error;
       }
 
       return data;
     } catch (error) {
-      console.error('Error in getProject:', error);
+      console.error('[projectService] Error in getProject:', error);
       throw error;
     }
   }
