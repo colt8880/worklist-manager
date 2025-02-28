@@ -139,13 +139,20 @@ export const ProjectsView: React.FC = () => {
     if (!user || !currentProject) return null;
 
     try {
+      console.log('[ProjectsView] Updating cell:', {
+        rowId,
+        column,
+        value,
+        valueType: typeof value
+      });
+
       // Update Redux state with just the cell change
       dispatch(updateCell({ rowId, column, value }));
 
       // Find the existing row
       const existingRow = data.find(row => row.id === rowId);
       if (!existingRow) {
-        console.error('Row not found:', rowId);
+        console.error('[ProjectsView] Row not found:', rowId);
         return null;
       }
 
@@ -159,18 +166,23 @@ export const ProjectsView: React.FC = () => {
         ...currentProject,
         data: updatedData,
         updatedAt: new Date().toISOString(),
+      }).then(() => {
+        console.log('[ProjectsView] Cell update saved to database successfully');
       }).catch(error => {
-        console.error('Failed to save to database:', error);
+        console.error('[ProjectsView] Failed to save to database:', error);
       });
 
       // Return the updated row with id
-      return {
+      const updatedRow = {
         ...existingRow,
         id: rowId, // Ensure the id is included
         [column]: value
       };
+      
+      console.log('[ProjectsView] Returning updated row:', updatedRow);
+      return updatedRow;
     } catch (error) {
-      console.error('Failed to update cell:', error);
+      console.error('[ProjectsView] Failed to update cell:', error);
       return null;
     }
   };

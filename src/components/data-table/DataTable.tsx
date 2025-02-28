@@ -102,6 +102,29 @@ export const DataTable: React.FC<DataTableProps> = ({
     }));
   }, [data]);
 
+  // Handle cell edit stop events
+  const handleCellEditStop: GridEventListener<'cellEditStop'> = (params, event) => {
+    const { id, field, reason } = params;
+    
+    // Only process if edit was committed
+    if (reason === GridCellEditStopReasons.cellFocusOut || 
+        reason === GridCellEditStopReasons.enterKeyDown) {
+      console.log('[DataTable] Cell edit stopped:', { id, field, reason });
+      
+      // Get the new value from the editor
+      const newValue = apiRef.current.getCellValue(id, field);
+      console.log('[DataTable] New cell value:', { id, field, newValue });
+      
+      // If the edit was committed, ensure the value is saved
+      // This is a backup for cases where processRowUpdate might not be triggered
+      if (newValue !== undefined) {
+        onUpdateCell(id, field, newValue).catch(error => {
+          console.error('[DataTable] Error updating cell from edit stop event:', error);
+        });
+      }
+    }
+  };
+
   // Handle row updates
   const processRowUpdate = React.useCallback(
     async (newRow: GridRowModel, oldRow: GridRowModel) => {
@@ -111,8 +134,26 @@ export const DataTable: React.FC<DataTableProps> = ({
           return oldRow;
         }
 
-        const result = await onUpdateCell(newRow.id, Object.keys(newRow)[0], newRow[Object.keys(newRow)[0]]);
+        // Find the changed column by comparing newRow and oldRow
+        const changedColumn = Object.keys(newRow).find(key => 
+          key !== 'id' && !_.isEqual(newRow[key], oldRow[key])
+        );
+
+        if (!changedColumn) {
+          console.warn('[DataTable] No changed column found between:', { newRow, oldRow });
+          return oldRow;
+        }
+
+        console.log('[DataTable] Updating cell:', {
+          rowId: newRow.id,
+          column: changedColumn,
+          oldValue: oldRow[changedColumn],
+          newValue: newRow[changedColumn]
+        });
+
+        const result = await onUpdateCell(newRow.id, changedColumn, newRow[changedColumn]);
         if (!result) {
+          console.warn('[DataTable] Update cell returned no result');
           return oldRow;
         }
 
@@ -210,36 +251,46 @@ export const DataTable: React.FC<DataTableProps> = ({
               if (!params) return '';
               return params.value === undefined || params.value === null ? '' : String(params.value);
             },
-            renderCell: (params: GridRenderCellParams) => (
-              <Box
-                sx={{
-                  width: '100%',
-                  height: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  cursor: 'pointer',
-                  padding: 0
-                }}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  apiRef.current.startCellEditMode({ id: params.id, field: params.field });
-                }}
-              >
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', flex: 1, paddingLeft: '8px' }}>
-                  {params.value || ''}
-                </span>
-                <ArrowDropDownIcon 
-                  sx={{ 
-                    color: 'rgba(0, 0, 0, 0.54)',
-                    marginLeft: 1,
-                    marginRight: 1,
-                    fontSize: 20,
-                    flexShrink: 0
-                  }} 
-                />
-              </Box>
-            )
+            renderCell: (params: GridRenderCellParams) => {
+              // Log the cell value for debugging
+              console.log(`[DataTable] Rendering singleSelect cell:`, {
+                id: params.id,
+                field: params.field,
+                value: params.value,
+                valueType: typeof params.value
+              });
+              
+              return (
+                <Box
+                  sx={{
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    cursor: 'pointer',
+                    padding: 0
+                  }}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    apiRef.current.startCellEditMode({ id: params.id, field: params.field });
+                  }}
+                >
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', flex: 1, paddingLeft: '8px' }}>
+                    {params.value || ''}
+                  </span>
+                  <ArrowDropDownIcon 
+                    sx={{ 
+                      color: 'rgba(0, 0, 0, 0.54)',
+                      marginLeft: 1,
+                      marginRight: 1,
+                      fontSize: 20,
+                      flexShrink: 0
+                    }} 
+                  />
+                </Box>
+              );
+            }
           } satisfies GridColDef;
         }
       }
@@ -258,12 +309,13 @@ export const DataTable: React.FC<DataTableProps> = ({
         disableRowSelectionOnClick
         processRowUpdate={processRowUpdate}
         onProcessRowUpdateError={(error) => {
-          console.error('Error in row update:', error);
+          console.error('[DataGrid] Error in row update:', error);
         }}
         slots={{
           columnMenu: CustomColumnMenu,
         }}
         editMode="cell"
+        onCellEditStop={handleCellEditStop}
         sx={{
           '& .MuiDataGrid-cell': {
             borderRight: '1px solid rgba(224, 224, 224, 1)',
