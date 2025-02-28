@@ -1,5 +1,5 @@
 // src/App.tsx
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
@@ -9,9 +9,8 @@ import { AppRoutes } from './routes/AppRoutes';
 import { AuthLayout } from './components/auth/AuthLayout';
 import { AuthenticatedLayout } from './components/layout/AuthenticatedLayout';
 import { useAppSelector, useAppDispatch } from './store/store';
-import { login, logout } from './store/slices/authSlice';
-import { setLoginDialogOpen } from './store/slices/uiSlice';
-import { LoginCredentials } from './types/auth';
+import { logout, getCurrentSession } from './store/slices/authSlice';
+import { useLocationChangeEffect } from './hooks/useLocationChangeEffect';
 
 /**
  * AppContent component handles the main application logic and layout
@@ -21,9 +20,17 @@ import { LoginCredentials } from './types/auth';
  */
 const AppContent: React.FC = () => {
   const { user, authError } = useAppSelector((state) => state.auth);
-  const { isLoginOpen } = useAppSelector((state) => state.ui.dialog);
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
+
+  // Use our custom hook to track location changes
+  useLocationChangeEffect();
+  
+  // Get the current user session when the app loads
+  useEffect(() => {
+    console.log('[AppContent] Checking for existing session');
+    dispatch(getCurrentSession());
+  }, [dispatch]);
 
   const handleTitleClick = () => {
     navigate('/');
@@ -33,14 +40,8 @@ const AppContent: React.FC = () => {
     navigate('/projects');
   };
 
-  const handleLogin = async (credentials: LoginCredentials) => {
-    try {
-      await dispatch(login(credentials)).unwrap();
-      dispatch(setLoginDialogOpen(false));
-      navigate('/projects');
-    } catch (error) {
-      console.error('Login error:', error);
-    }
+  const handleLoginClick = () => {
+    navigate('/login');
   };
 
   if (!user) {
@@ -48,13 +49,10 @@ const AppContent: React.FC = () => {
       <AuthLayout
         user={user}
         authError={authError}
-        isLoginOpen={isLoginOpen}
-        onLoginClick={() => dispatch(setLoginDialogOpen(true))}
-        onLogin={handleLogin}
+        onLoginClick={handleLoginClick}
         onLogout={() => dispatch(logout())}
         onTitleClick={handleTitleClick}
         onProjectsClick={handleProjectsClick}
-        onLoginClose={() => dispatch(setLoginDialogOpen(false))}
       >
         <AppRoutes />
       </AuthLayout>
@@ -75,7 +73,7 @@ const AppContent: React.FC = () => {
 
 /**
  * App component is the root component of the application
- * It provides necessary context providers and renders the main content
+ * It provides the Redux store and other providers
  * 
  * @returns {JSX.Element} The root application component
  */

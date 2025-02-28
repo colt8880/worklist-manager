@@ -5,9 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import { Register } from '../auth/Register';
-import { useAppDispatch, useAppSelector } from '../../store/store';
-import { setRegisterDialogOpen } from '../../store/slices/uiSlice';
+import { useAppSelector } from '../../store/store';
 
 const FeatureIcon = styled(CheckCircleIcon)(({ theme }) => ({
   color: theme.palette.success.main,
@@ -22,9 +20,7 @@ const FeatureIcon = styled(CheckCircleIcon)(({ theme }) => ({
 const LandingPage: React.FC = () => {
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const navigate = useNavigate();
-  const dispatch = useAppDispatch();
   const { user, authError } = useAppSelector((state) => state.auth);
-  const { isRegisterOpen } = useAppSelector((state) => state.ui.dialog);
 
   // If user is logged in and there's no auth error, redirect to projects
   React.useEffect(() => {
@@ -46,11 +42,7 @@ const LandingPage: React.FC = () => {
   }, []);
 
   const handleRegisterClick = () => {
-    dispatch(setRegisterDialogOpen(true));
-  };
-
-  const handleCloseRegister = () => {
-    dispatch(setRegisterDialogOpen(false));
+    navigate('/register');
   };
 
   return (
@@ -101,7 +93,7 @@ const LandingPage: React.FC = () => {
           })}
         >
           <source
-            src={process.env.PUBLIC_URL + '/assets/landing-video.mp4'}
+            src={process.env.PUBLIC_URL + '/assets/videos/data-background.mp4'}
             type="video/mp4"
             onError={(e) => console.error('[Landing] Video source error:', {
               error: e,
@@ -217,11 +209,6 @@ const LandingPage: React.FC = () => {
           </Box>
         </Container>
       </Box>
-
-      <Register
-        open={isRegisterOpen}
-        onClose={handleCloseRegister}
-      />
     </Box>
   );
 };

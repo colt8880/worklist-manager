@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IconButton, Menu, MenuItem } from '@mui/material';
+import { Button, Menu, MenuItem, Box, Typography, Divider } from '@mui/material';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import { User } from '../../types/auth';
 
@@ -24,15 +24,27 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
     onLogout();
   };
 
+  // Format the user's full name if available
+  const fullName = user.firstName && user.lastName 
+    ? `${user.firstName} ${user.lastName}` 
+    : user.firstName || 'User';
+
   return (
     <>
-      <IconButton
+      <Button
         onClick={handleMenuOpen}
         color="inherit"
-        size="large"
+        endIcon={<AccountCircleIcon />}
+        sx={{ 
+          textTransform: 'none',
+          fontWeight: 500,
+          '& .MuiButton-endIcon': {
+            marginLeft: 1
+          }
+        }}
       >
-        <AccountCircleIcon />
-      </IconButton>
+        {user.firstName || 'User'}
+      </Button>
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
@@ -45,7 +57,19 @@ export const UserMenu: React.FC<UserMenuProps> = ({ user, onLogout }) => {
           vertical: 'top',
           horizontal: 'right',
         }}
+        PaperProps={{
+          sx: { minWidth: '200px' }
+        }}
       >
+        <Box sx={{ px: 2, py: 1 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+            {fullName}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {user.email}
+          </Typography>
+        </Box>
+        <Divider />
         <MenuItem onClick={handleLogout}>Logout</MenuItem>
       </Menu>
     </>

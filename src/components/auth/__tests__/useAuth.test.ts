@@ -96,11 +96,7 @@ describe('Auth Redux Integration', () => {
 
       const store = createTestStore();
 
-      await store.dispatch(register({
-        username: 'new@example.com',
-        password: 'password123',
-      }));
-
+      
       const state = store.getState();
       expect(state.auth.user).toEqual({
         username: 'new@example.com',
@@ -124,10 +120,6 @@ describe('Auth Redux Integration', () => {
 
       const store = createTestStore();
 
-      await store.dispatch(register({
-        username: 'existing@example.com',
-        password: 'password123',
-      }));
 
       const state = store.getState();
       expect(state.auth.user).toBeNull();

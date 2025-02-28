@@ -2,6 +2,8 @@ import React from 'react';
 import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
 import { User } from '../../types/auth';
 import { UserMenu } from './UserMenu';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import { useNavigate } from 'react-router-dom';
 
 export interface HeaderProps {
   user: User | null;
@@ -18,6 +20,16 @@ export const Header: React.FC<HeaderProps> = ({
   onTitleClick,
   onProjectsClick
 }) => {
+  const navigate = useNavigate();
+
+  const handleAccountClick = () => {
+    if (onLoginClick) {
+      onLoginClick();
+    } else {
+      navigate('/login');
+    }
+  };
+
   return (
     <AppBar position="fixed" sx={{ borderRadius: 0 }}>
       <Toolbar>
@@ -47,8 +59,17 @@ export const Header: React.FC<HeaderProps> = ({
             <UserMenu user={user} onLogout={onLogout} />
           </>
         ) : (
-          <Button color="inherit" onClick={onLoginClick}>
-            Login
+          <Button 
+            color="inherit" 
+            onClick={handleAccountClick}
+            endIcon={<AccountCircleIcon />}
+            sx={{ 
+              '& .MuiButton-endIcon': {
+                marginLeft: 1 // Add a bit more spacing between text and icon
+              }
+            }}
+          >
+            Account
           </Button>
         )}
       </Toolbar>
