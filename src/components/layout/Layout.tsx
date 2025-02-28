@@ -2,8 +2,7 @@ import React from 'react';
 import { Box } from '@mui/material';
 import { Header } from './Header';
 import { User } from '../../types/auth';
-import { useLocation } from 'react-router-dom';
-import { useProjects } from '../../contexts/useProjects';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 export interface LayoutProps {
   children: React.ReactNode;
@@ -21,12 +20,12 @@ export const Layout: React.FC<LayoutProps> = ({
   onProjectsClick 
 }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const isLandingPage = location.pathname === '/';
-  const { goToProjectsList } = useProjects();
 
   const handleTitleClick = () => {
     if (!isLandingPage) {
-      goToProjectsList();
+      navigate('/projects');
     }
   };
 
@@ -36,7 +35,7 @@ export const Layout: React.FC<LayoutProps> = ({
         user={user} 
         onLogout={onLogout}
         onTitleClick={handleTitleClick}
-        onProjectsClick={goToProjectsList}
+        onProjectsClick={() => navigate('/projects')}
       />
       <Box 
         component="main" 

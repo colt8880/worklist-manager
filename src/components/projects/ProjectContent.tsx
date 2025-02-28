@@ -17,7 +17,7 @@ interface ProjectContentProps {
   onClearData: () => void;
   customColumns: Record<string, CustomColumn>;
   onAddCustomColumn: (column: CustomColumn) => void;
-  onUpdateData: (rowId: string | number, column: string, value: any) => void;
+  onUpdateData: (rowId: string | number, column: string, value: any) => Promise<DataRecord | null>;
   currentProject: Project | null;
   setCurrentProject: (project: Project | null) => void;
   onBackToProjects: () => void;
@@ -52,8 +52,14 @@ export const ProjectContent: React.FC<ProjectContentProps> = ({
   const handleFileUpload = async (uploadedData: DataRecord[]) => {
     try {
       if (uploadedData.length > 0) {
-        const detectedColumns = Object.keys(uploadedData[0]);
-        await onDataUpdate(uploadedData, detectedColumns);
+        // Ensure each row has a unique ID
+        const dataWithIds = uploadedData.map((row, index) => ({
+          ...row,
+          id: String(index) // Use index as stable ID for imported data
+        }));
+        
+        const detectedColumns = Object.keys(uploadedData[0]).filter(col => col !== 'id');
+        await onDataUpdate(dataWithIds, detectedColumns);
       }
     } catch (error) {
       console.error('Error uploading file:', error);
@@ -143,7 +149,10 @@ export const ProjectContent: React.FC<ProjectContentProps> = ({
             data={data}
             columns={columns}
             customColumns={currentProject?.customColumns || {}}
-            onUpdateCell={onUpdateData}
+            onUpdateCell={async (rowId, field, value) => {
+              const updatedRow = await onUpdateData(rowId, field, value);
+              return updatedRow;
+            }}
             onDeleteColumn={handleDeleteColumn}
           />
           <AddColumnDialog

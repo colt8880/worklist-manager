@@ -11,12 +11,20 @@ import {
   GridEventListener,
   GridCellEditStopReasons,
   GridCellParams,
+  GridValueFormatter,
 } from '@mui/x-data-grid';
 import { MenuItem, Box, Divider, Checkbox } from '@mui/material';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import { CustomColumn } from '../../types/project';
-import { DataTableProps } from '../../types/datatable';
+
+interface DataTableProps {
+  data: any[];
+  columns: string[];
+  customColumns: Record<string, any>;
+  onUpdateCell: (rowId: string | number, field: string, value: any) => Promise<any>;
+  onDeleteColumn?: (columnName: string) => void;
+}
 
 function CustomColumnMenu(props: GridColumnMenuProps) {
   const { hideMenu, colDef } = props;
@@ -68,6 +76,73 @@ export const DataTable: React.FC<DataTableProps> = ({
 }) => {
   const apiRef = useGridApiRef();
 
+  // Add IDs to rows if they don't exist and ensure they're strings
+  const rowsWithIds = useMemo(() => {
+    // Log initial data state
+    console.log('Processing rows with IDs:', {
+      dataLength: data.length,
+      hasIds: data.every(row => row.id !== undefined),
+      firstFewRows: data.slice(0, 3)
+    });
+
+    // If all rows already have IDs, just ensure they're strings
+    if (data.every(row => row.id !== undefined)) {
+      return data.map(row => ({
+        ...row,
+        id: String(row.id)
+      }));
+    }
+
+    // If some rows are missing IDs, assign new ones
+    console.warn('Some rows are missing IDs, assigning new ones');
+    return data.map((row, index) => ({
+      ...row,
+      id: row.id !== undefined ? String(row.id) : String(index)
+    }));
+  }, [data]);
+
+  // Handle row updates
+  const handleProcessRowUpdate = async (newRow: GridRowModel, oldRow: GridRowModel) => {
+    try {
+      // Find the changed field
+      const changedField = Object.keys(newRow).find(
+        field => field !== 'id' && newRow[field] !== oldRow[field]
+      );
+
+      if (!changedField) {
+        console.log('No changes detected in row update');
+        return oldRow;
+      }
+
+      console.log('Processing row update:', {
+        rowId: newRow.id,
+        field: changedField,
+        oldValue: oldRow[changedField],
+        newValue: newRow[changedField]
+      });
+
+      // Call onUpdateCell with the changed field and wait for the result
+      const result = await onUpdateCell(newRow.id, changedField, newRow[changedField]);
+      
+      if (!result) {
+        console.log('Update failed, returning old row');
+        return oldRow;
+      }
+
+      // Ensure the returned result has an ID
+      const finalResult = {
+        ...result,
+        id: result.id || newRow.id
+      };
+
+      console.log('Update successful, returning row:', finalResult);
+      return finalResult;
+    } catch (error) {
+      console.error('Error processing row update:', error);
+      return oldRow;
+    }
+  };
+
   // Add event listener for column deletion
   React.useEffect(() => {
     const handleDeleteColumn = (event: Event) => {
@@ -80,90 +155,6 @@ export const DataTable: React.FC<DataTableProps> = ({
       window.removeEventListener('deleteColumn', handleDeleteColumn);
     };
   }, [onDeleteColumn]);
-
-  // Add IDs to rows if they don't exist and ensure they're strings
-  const rowsWithIds = useMemo(() => {
-    console.log('Processing rows with IDs:', {
-      originalData: data,
-      dataLength: data.length,
-      sampleIds: data.slice(0, 3).map((row, idx) => ({ 
-        originalId: row.id, 
-        index: idx,
-        type: typeof row.id 
-      }))
-    });
-
-    const processedRows = data.map((row, index) => {
-      // Always use the array index as the ID to match DataGrid's expectations
-      const processedRow = {
-        ...row,
-        id: String(index)
-      };
-      
-      // Log a few rows for debugging
-      if (index < 3) {
-        console.log('Processed row:', {
-          index,
-          originalId: row.id,
-          newId: processedRow.id,
-          originalType: typeof row.id,
-          newType: typeof processedRow.id,
-          row: processedRow
-        });
-      }
-      
-      return processedRow;
-    });
-
-    console.log('First few processed rows:', processedRows.slice(0, 3));
-    return processedRows;
-  }, [data]);
-
-  // Process row updates
-  const handleProcessRowUpdate = async (newRow: any, oldRow: any) => {
-    console.log('Processing row update:', {
-      newRow,
-      oldRow,
-      newRowId: newRow.id,
-      oldRowId: oldRow.id,
-      newRowIdType: typeof newRow.id,
-      oldRowIdType: typeof oldRow.id,
-      allRowIds: rowsWithIds.slice(0, 5).map(r => ({ 
-        id: r.id, 
-        type: typeof r.id
-      }))
-    });
-
-    try {
-      // Find the changed field
-      const changedField = Object.keys(newRow).find(
-        field => newRow[field] !== oldRow[field]
-      );
-
-      if (!changedField) {
-        console.log('No changes detected in row update');
-        return oldRow;
-      }
-
-      const stringId = String(newRow.id);
-      console.log('Detected change in field:', {
-        field: changedField,
-        oldValue: oldRow[changedField],
-        newValue: newRow[changedField],
-        rowId: stringId,
-        rowIdType: typeof stringId,
-        matchingRow: rowsWithIds.find(r => r.id === stringId)
-      });
-
-      // Call onUpdateCell with the changed field
-      await onUpdateCell(stringId, changedField, newRow[changedField]);
-      console.log('Cell update successful');
-      return newRow;
-    } catch (error) {
-      console.error('Error processing row update:', error);
-      return oldRow;
-    }
-  };
 
   // Handle checkbox changes
   const handleCheckboxChange = async (params: GridCellParams) => {
@@ -186,15 +177,10 @@ export const DataTable: React.FC<DataTableProps> = ({
       const oldRow = params.row;
       const newRow = { ...oldRow, [params.field]: newValue };
       
-      const result = await handleProcessRowUpdate(newRow, oldRow);
-      console.log('Checkbox update result:', {
-        success: !!result,
-        resultId: result?.id,
-        resultIdType: typeof result?.id,
-        result
-      });
+      const result = await onUpdateCell(stringId, params.field, newValue);
+      console.log('Checkbox update result:', result);
       
-      return result;
+      return result || oldRow;
     } catch (error) {
       console.error('Error handling checkbox change:', error);
       return params.row;
@@ -236,6 +222,11 @@ export const DataTable: React.FC<DataTableProps> = ({
             ...baseColDef,
             type: 'singleSelect' as const,
             valueOptions: customColumn.options || [],
+            // Ensure undefined values are converted to empty string and handle null params
+            valueFormatter: (params: { value: any }) => {
+              if (!params) return '';
+              return params.value === undefined || params.value === null ? '' : String(params.value);
+            },
             renderCell: (params: GridRenderCellParams) => (
               <Box
                 sx={{
@@ -246,8 +237,7 @@ export const DataTable: React.FC<DataTableProps> = ({
                   justifyContent: 'space-between',
                   cursor: 'pointer',
                   padding: 0
-                  }
-                }
+                }}
                 onClick={(event) => {
                   event.stopPropagation();
                   apiRef.current.startCellEditMode({ id: params.id, field: params.field });

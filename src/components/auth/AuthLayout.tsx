@@ -1,4 +1,5 @@
 import React from 'react';
+import { Box, Container } from '@mui/material';
 import { User } from '../../types/auth';
 import { Header } from '../layout/Header';
 import { Login } from './Login';
@@ -18,7 +19,7 @@ interface AuthLayoutProps {
 
 /**
  * AuthLayout component handles the layout for unauthenticated users
- * It includes the header and login dialog
+ * It includes the header, login dialog, and main content
  * 
  * @param {AuthLayoutProps} props - Component props
  * @returns {JSX.Element} The auth layout
@@ -44,7 +45,11 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
         onTitleClick={onTitleClick}
         onProjectsClick={onProjectsClick}
       />
-      {children}
+      <Container maxWidth="lg">
+        <Box sx={{ mt: 3 }}>
+          {children}
+        </Box>
+      </Container>
       <Login 
         open={isLoginOpen}
         onClose={onLoginClose}

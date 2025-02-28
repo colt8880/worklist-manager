@@ -1,36 +1,68 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { ProjectsView } from '../components/projects/ProjectsView';
-import { LandingPage } from '../components/landing/LandingPage';
-import { User } from '../types/auth';
+import { Box, CircularProgress } from '@mui/material';
+import { useRouteGuard } from '../hooks/useRouteGuard';
 
-interface AppRoutesProps {
-  user: User | null;
-}
+// Lazy load components
+const LandingPage = React.lazy(() => import('../components/landing/LandingPage'));
+const ProjectsView = React.lazy(() => import('../components/projects/ProjectsView'));
+
+const LoadingFallback = () => (
+  <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+    <CircularProgress />
+  </Box>
+);
+
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { isAuthenticated } = useRouteGuard({ requireAuth: true, redirectTo: '/' });
+  return isAuthenticated ? <>{children}</> : null;
+};
 
 /**
  * AppRoutes component handles all routing logic for the application
- * It renders different routes based on authentication status
+ * It uses code splitting and route guards for better performance and security
  * 
- * @param {AppRoutesProps} props - Component props
  * @returns {JSX.Element} The router configuration
  */
-export const AppRoutes: React.FC<AppRoutesProps> = ({ user }) => {
-  if (!user) {
-    return (
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    );
-  }
+export const AppRoutes: React.FC = () => {
+  const { isAuthenticated } = useRouteGuard();
 
   return (
-    <Routes>
-      <Route path="/" element={<Navigate to="/projects" replace />} />
-      <Route path="/projects" element={<ProjectsView />} />
-      <Route path="/projects/:projectId" element={<ProjectsView />} />
-      <Route path="*" element={<Navigate to="/projects" replace />} />
-    </Routes>
+    <Suspense fallback={<LoadingFallback />}>
+      <Routes>
+        {/* Public routes */}
+        <Route
+          path="/"
+          element={
+            isAuthenticated ? (
+              <Navigate to="/projects" replace />
+            ) : (
+              <LandingPage />
+            )
+          }
+        />
+
+        {/* Protected routes */}
+        <Route
+          path="/projects"
+          element={
+            <ProtectedRoute>
+              <ProjectsView />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/projects/:projectId"
+          element={
+            <ProtectedRoute>
+              <ProjectsView />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Catch all route */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Suspense>
   );
 }; 

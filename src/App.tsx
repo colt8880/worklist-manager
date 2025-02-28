@@ -1,11 +1,16 @@
 // src/App.tsx
-import React, { useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from './components/auth/hooks/useAuth';
+import { Provider } from 'react-redux';
+import { PersistGate } from 'redux-persist/integration/react';
+import { store, persistor } from './store/store';
 import { AppProviders } from './providers/AppProviders';
 import { AppRoutes } from './routes/AppRoutes';
 import { AuthLayout } from './components/auth/AuthLayout';
 import { AuthenticatedLayout } from './components/layout/AuthenticatedLayout';
+import { useAppSelector, useAppDispatch } from './store/store';
+import { login, logout } from './store/slices/authSlice';
+import { setLoginDialogOpen } from './store/slices/uiSlice';
 import { LoginCredentials } from './types/auth';
 
 /**
@@ -15,8 +20,9 @@ import { LoginCredentials } from './types/auth';
  * @returns {JSX.Element} The main application content
  */
 const AppContent: React.FC = () => {
-  const { user, authError, login, logout } = useAuth();
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const { user, authError } = useAppSelector((state) => state.auth);
+  const { isLoginOpen } = useAppSelector((state) => state.ui.dialog);
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
 
   const handleTitleClick = () => {
@@ -29,8 +35,8 @@ const AppContent: React.FC = () => {
 
   const handleLogin = async (credentials: LoginCredentials) => {
     try {
-      await login(credentials);
-      setIsLoginOpen(false);
+      await dispatch(login(credentials)).unwrap();
+      dispatch(setLoginDialogOpen(false));
       navigate('/projects');
     } catch (error) {
       console.error('Login error:', error);
@@ -43,14 +49,14 @@ const AppContent: React.FC = () => {
         user={user}
         authError={authError}
         isLoginOpen={isLoginOpen}
-        onLoginClick={() => setIsLoginOpen(true)}
+        onLoginClick={() => dispatch(setLoginDialogOpen(true))}
         onLogin={handleLogin}
-        onLogout={logout}
+        onLogout={() => dispatch(logout())}
         onTitleClick={handleTitleClick}
         onProjectsClick={handleProjectsClick}
-        onLoginClose={() => setIsLoginOpen(false)}
+        onLoginClose={() => dispatch(setLoginDialogOpen(false))}
       >
-        <AppRoutes user={user} />
+        <AppRoutes />
       </AuthLayout>
     );
   }
@@ -58,11 +64,11 @@ const AppContent: React.FC = () => {
   return (
     <AuthenticatedLayout
       user={user}
-      onLogout={logout}
+      onLogout={() => dispatch(logout())}
       onTitleClick={handleTitleClick}
       onProjectsClick={handleProjectsClick}
     >
-      <AppRoutes user={user} />
+      <AppRoutes />
     </AuthenticatedLayout>
   );
 };
@@ -75,9 +81,13 @@ const AppContent: React.FC = () => {
  */
 const App: React.FC = () => {
   return (
-    <AppProviders>
-      <AppContent />
-    </AppProviders>
+    <Provider store={store}>
+      <PersistGate loading={null} persistor={persistor}>
+        <AppProviders>
+          <AppContent />
+        </AppProviders>
+      </PersistGate>
+    </Provider>
   );
 };
 

@@ -5,11 +5,19 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { Register } from '../auth/Register';
 import { useAuth } from '../auth/hooks/useAuth';
+import { useAppDispatch } from '../../store/store';
+import { setLoginDialogOpen } from '../../store/slices/uiSlice';
 
-export const LandingPage: React.FC = () => {
+/**
+ * LandingPage component displays the main landing page for unauthenticated users
+ * 
+ * @returns {JSX.Element} The landing page component
+ */
+const LandingPage: React.FC = () => {
   const videoRef = React.useRef<HTMLVideoElement>(null);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const { user } = useAuth();
+  const dispatch = useAppDispatch();
 
   React.useEffect(() => {
     const video = videoRef.current;
@@ -196,4 +204,6 @@ export const LandingPage: React.FC = () => {
       </Box>
     </Box>
   );
-}; 
+};
+
+export default LandingPage; 

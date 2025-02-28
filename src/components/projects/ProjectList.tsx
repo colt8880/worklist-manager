@@ -171,7 +171,8 @@ const ProjectListItem: React.FC<{
         Edit
       </MenuItem>
       <MenuItem
-        onClick={() => {
+        onClick={(e) => {
+          e.stopPropagation();
           onMenuClose();
           onProjectDelete();
         }}
