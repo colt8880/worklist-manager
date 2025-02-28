@@ -117,16 +117,20 @@ export const ProjectContent: React.FC<ProjectContentProps> = ({
         <FileUpload onFileUpload={handleFileUpload} />
       ) : (
         <>
-          <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <IconButton onClick={onBackToProjects}>
-                <ArrowBackIcon />
-              </IconButton>
-              <Typography variant="h5" component="h2">
-                {currentProject?.name}
-              </Typography>
-            </Box>
-            <IconButton onClick={handleMenuOpen}>
+          <Box sx={{ 
+            display: 'flex', 
+            justifyContent: 'flex-end', 
+            alignItems: 'flex-start',
+            mt: -5,
+            mb: 2
+          }}>
+            <IconButton 
+              onClick={handleMenuOpen}
+              sx={{ 
+                mt: -0.5,
+                p: 0.5
+              }}
+            >
               <MoreVertIcon />
             </IconButton>
             <Menu

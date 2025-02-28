@@ -1,196 +1,94 @@
-import React, { useState, ReactNode } from 'react';
-import { 
-  Box, 
-  TextField, 
-  Button, 
-  Typography, 
-  Alert, 
+import React, { useState } from 'react';
+import {
   Dialog,
-  DialogContent,
   DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Button,
   IconButton,
-  Link
+  Typography,
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { useAuth } from './hooks/useAuth';
+import { useAppDispatch, useAppSelector } from '../../store/store';
+import { register } from '../../store/slices/authSlice';
 
 interface RegisterProps {
   open: boolean;
   onClose: () => void;
-  onLoginClick?: () => void;
 }
 
-export const Register: React.FC<RegisterProps> = ({ 
-  open, 
-  onClose,
-  onLoginClick 
-}) => {
-  const { register } = useAuth();
-  const [email, setEmail] = useState('');
+export const Register: React.FC<RegisterProps> = ({ open, onClose }) => {
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState<ReactNode | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const dispatch = useAppDispatch();
+  const { authError } = useAppSelector((state) => state.auth);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setIsSubmitting(true);
-
-    if (!email.includes('@')) {
-      setError('Please enter a valid email address');
-      setIsSubmitting(false);
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError("Passwords don't match");
-      setIsSubmitting(false);
-      return;
-    }
-
     try {
-      await register({ username: email, password });
-      // Only close and clear if registration was successful
-      handleClose();
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Registration failed';
-      
-      // If the error indicates the user already exists, show the login link
-      if (errorMessage.includes('already registered')) {
-        setError(
-          <Box>
-            <Typography component="span">
-              {errorMessage}{' '}
-            </Typography>
-            <Button
-              color="primary"
-              size="small"
-              onClick={() => {
-                handleClose();
-                onLoginClick?.();
-              }}
-              sx={{ ml: 1 }}
-            >
-              Login Instead
-            </Button>
-          </Box>
-        );
-      } else {
-        setError(errorMessage);
-      }
-    } finally {
-      setIsSubmitting(false);
+      await dispatch(register({ username, password })).unwrap();
+      onClose();
+    } catch (error) {
+      // Error is handled by the auth slice
     }
-  };
-
-  const handleClose = () => {
-    // Clear everything when closing
-    setError(null);
-    setEmail('');
-    setPassword('');
-    setConfirmPassword('');
-    onClose();
   };
 
   return (
-    <Dialog 
-      open={open} 
-      onClose={handleClose}
-      maxWidth="sm"
-      fullWidth
-    >
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Typography variant="h5">Create Account</Typography>
-          <IconButton onClick={handleClose} size="small">
-            <CloseIcon />
-          </IconButton>
-        </Box>
-      </DialogTitle>
-      <DialogContent>
-        <Box
-          component="form"
-          onSubmit={handleSubmit}
+        Register
+        <IconButton
+          aria-label="close"
+          onClick={onClose}
           sx={{
-            mt: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 2
+            position: 'absolute',
+            right: 8,
+            top: 8,
+            color: (theme) => theme.palette.grey[500],
           }}
         >
-          {error && (
-            <Alert 
-              severity="error" 
-              sx={{ mb: 2 }}
-              action={
-                error.toString().includes('already registered') && (
-                  <Button 
-                    color="primary"
-                    variant="outlined"
-                    size="small"
-                    onClick={() => {
-                      handleClose();
-                      onLoginClick?.();
-                    }}
-                  >
-                    Switch to Login
-                  </Button>
-                )
-              }
-            >
-              {error}
-            </Alert>
+          <CloseIcon />
+        </IconButton>
+      </DialogTitle>
+      <form onSubmit={handleSubmit}>
+        <DialogContent>
+          {authError && (
+            <Typography color="error" gutterBottom>
+              {authError}
+            </Typography>
           )}
-          
           <TextField
-            fullWidth
-            label="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
             autoFocus
-            disabled={isSubmitting}
-            error={!!error && error.toString().includes('email')}
-          />
-          
-          <TextField
+            margin="dense"
+            id="username"
+            label="Email Address"
+            type="email"
             fullWidth
-            type="password"
+            variant="outlined"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+          />
+          <TextField
+            margin="dense"
+            id="password"
             label="Password"
+            type="password"
+            fullWidth
+            variant="outlined"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            disabled={isSubmitting}
-            error={!!error && error.toString().includes('password')}
-            inputProps={{ 'data-testid': 'password-input' }}
           />
-          
-          <TextField
-            fullWidth
-            type="password"
-            label="Confirm Password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-            disabled={isSubmitting}
-            error={!!error && error.toString().includes('password')}
-            inputProps={{ 'data-testid': 'confirm-password-input' }}
-          />
-
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            size="large"
-            sx={{ mt: 2 }}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Creating Account...' : 'Create Account'}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={onClose}>Cancel</Button>
+          <Button type="submit" variant="contained" color="primary">
+            Register
           </Button>
-        </Box>
-      </DialogContent>
+        </DialogActions>
+      </form>
     </Dialog>
   );
 }; 

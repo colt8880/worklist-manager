@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-type NotificationType = 'success' | 'error' | 'info' | 'warning';
+export type NotificationType = 'success' | 'error' | 'info' | 'warning';
 
 interface NotificationState {
   message: string;
@@ -12,6 +12,7 @@ interface NotificationState {
 
 interface DialogState {
   isLoginOpen: boolean;
+  isRegisterOpen: boolean;
   isNewProjectOpen: boolean;
 }
 
@@ -28,6 +29,7 @@ const initialState: UIState = {
   },
   dialog: {
     isLoginOpen: false,
+    isRegisterOpen: false,
     isNewProjectOpen: false,
   },
 };
@@ -46,15 +48,23 @@ const uiSlice = createSlice({
       }>
     ) => {
       state.notification = {
-        ...action.payload,
+        message: action.payload.message,
+        type: action.payload.type,
         open: true,
+        retryAction: action.payload.retryAction,
+        retryLabel: action.payload.retryLabel,
       };
     },
     hideNotification: (state) => {
       state.notification.open = false;
+      state.notification.retryAction = undefined;
+      state.notification.retryLabel = undefined;
     },
     setLoginDialogOpen: (state, action: PayloadAction<boolean>) => {
       state.dialog.isLoginOpen = action.payload;
+    },
+    setRegisterDialogOpen: (state, action: PayloadAction<boolean>) => {
+      state.dialog.isRegisterOpen = action.payload;
     },
     setNewProjectDialogOpen: (state, action: PayloadAction<boolean>) => {
       state.dialog.isNewProjectOpen = action.payload;
@@ -66,6 +76,7 @@ export const {
   showNotification,
   hideNotification,
   setLoginDialogOpen,
+  setRegisterDialogOpen,
   setNewProjectDialogOpen,
 } = uiSlice.actions;
 

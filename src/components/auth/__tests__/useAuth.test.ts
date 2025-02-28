@@ -1,6 +1,9 @@
-import { renderHook, act } from '@testing-library/react';
-import { useAuth } from '../hooks/useAuth';
+import { renderHook } from '@testing-library/react';
+import { Provider } from 'react-redux';
+import { configureStore } from '@reduxjs/toolkit';
 import { supabase } from '../../../config/supabase';
+import authReducer, { login, register, logout } from '../../../store/slices/authSlice';
+import React from 'react';
 
 // Mock Supabase client
 jest.mock('../../../config/supabase', () => ({
@@ -14,7 +17,18 @@ jest.mock('../../../config/supabase', () => ({
   },
 }));
 
-describe('useAuth', () => {
+// Create a test store wrapper
+const createTestStore = (preloadedState = {}) => {
+  return configureStore({
+    reducer: {
+      auth: authReducer,
+    },
+    preloadedState,
+  });
+};
+
+// Remove wrapper as it's not needed for these tests
+describe('Auth Redux Integration', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -31,21 +45,20 @@ describe('useAuth', () => {
         error: null,
       });
 
-      const { result } = renderHook(() => useAuth());
+      const store = createTestStore();
+      
+      await store.dispatch(login({
+        username: 'test@example.com',
+        password: 'password123',
+      }));
 
-      await act(async () => {
-        await result.current.login({
-          username: 'test@example.com',
-          password: 'password123',
-        });
-      });
-
-      expect(result.current.user).toEqual({
+      const state = store.getState();
+      expect(state.auth.user).toEqual({
         username: 'test@example.com',
         email: mockUser.email,
         id: mockUser.id,
       });
-      expect(result.current.authError).toBeNull();
+      expect(state.auth.authError).toBeNull();
     });
 
     it('should handle login error', async () => {
@@ -55,21 +68,16 @@ describe('useAuth', () => {
         error: mockError,
       });
 
-      const { result } = renderHook(() => useAuth());
+      const store = createTestStore();
 
-      await act(async () => {
-        try {
-          await result.current.login({
-            username: 'test@example.com',
-            password: 'wrong-password',
-          });
-        } catch (error) {
-          // Expected error
-        }
-      });
+      await store.dispatch(login({
+        username: 'test@example.com',
+        password: 'wrong-password',
+      }));
 
-      expect(result.current.user).toBeNull();
-      expect(result.current.authError).toBe('Invalid email or password. Please try again.');
+      const state = store.getState();
+      expect(state.auth.user).toBeNull();
+      expect(state.auth.authError).toBe(mockError.message);
     });
   });
 
@@ -86,21 +94,20 @@ describe('useAuth', () => {
         error: null,
       });
 
-      const { result } = renderHook(() => useAuth());
+      const store = createTestStore();
 
-      await act(async () => {
-        await result.current.register({
-          username: 'new@example.com',
-          password: 'password123',
-        });
-      });
+      await store.dispatch(register({
+        username: 'new@example.com',
+        password: 'password123',
+      }));
 
-      expect(result.current.user).toEqual({
+      const state = store.getState();
+      expect(state.auth.user).toEqual({
         username: 'new@example.com',
         email: mockUser.email,
         id: mockUser.id,
       });
-      expect(result.current.authError).toBeNull();
+      expect(state.auth.authError).toBeNull();
     });
 
     it('should handle registration error for existing user', async () => {
@@ -115,21 +122,16 @@ describe('useAuth', () => {
         error: null,
       });
 
-      const { result } = renderHook(() => useAuth());
+      const store = createTestStore();
 
-      await act(async () => {
-        try {
-          await result.current.register({
-            username: 'existing@example.com',
-            password: 'password123',
-          });
-        } catch (error) {
-          // Expected error
-        }
-      });
+      await store.dispatch(register({
+        username: 'existing@example.com',
+        password: 'password123',
+      }));
 
-      expect(result.current.user).toBeNull();
-      expect(result.current.authError).toBe('This email is already registered. Please try logging in instead.');
+      const state = store.getState();
+      expect(state.auth.user).toBeNull();
+      expect(state.auth.authError).toBe('This email is already registered. Please try logging in instead.');
     });
   });
 
@@ -139,23 +141,23 @@ describe('useAuth', () => {
         error: null,
       });
 
-      const { result } = renderHook(() => useAuth());
-
-      // First set a user
-      act(() => {
-        result.current.setUser({
-          username: 'test@example.com',
-          email: 'test@example.com',
-          id: '123',
-        });
+      const store = createTestStore({
+        auth: {
+          user: {
+            username: 'test@example.com',
+            email: 'test@example.com',
+            id: '123',
+          },
+          authError: null,
+          isLoading: false,
+        },
       });
 
-      await act(async () => {
-        await result.current.logout();
-      });
+      await store.dispatch(logout());
 
-      expect(result.current.user).toBeNull();
-      expect(result.current.authError).toBeNull();
+      const state = store.getState();
+      expect(state.auth.user).toBeNull();
+      expect(state.auth.authError).toBeNull();
     });
 
     it('should handle logout error', async () => {
@@ -164,17 +166,22 @@ describe('useAuth', () => {
         error: mockError,
       });
 
-      const { result } = renderHook(() => useAuth());
-
-      await act(async () => {
-        try {
-          await result.current.logout();
-        } catch (error) {
-          // Expected error
-        }
+      const store = createTestStore({
+        auth: {
+          user: {
+            username: 'test@example.com',
+            email: 'test@example.com',
+            id: '123',
+          },
+          authError: null,
+          isLoading: false,
+        },
       });
 
-      expect(result.current.authError).toBe('Network error');
+      await store.dispatch(logout());
+
+      const state = store.getState();
+      expect(state.auth.authError).toBe(mockError.message);
     });
   });
 }); 

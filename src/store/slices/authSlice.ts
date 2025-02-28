@@ -59,6 +59,11 @@ export const register = createAsyncThunk(
 
       if (error) throw error;
 
+      // Check if the user already exists (Supabase returns user with empty identities array)
+      if (!data.user?.identities?.length) {
+        throw new Error('This email is already registered. Please try logging in instead.');
+      }
+
       return {
         id: data.user?.id || '',
         email: data.user?.email || '',
@@ -123,6 +128,7 @@ const authSlice = createSlice({
       })
       .addCase(register.rejected, (state, action) => {
         state.isLoading = false;
+        state.user = null;
         state.authError = action.payload as string;
       });
   },

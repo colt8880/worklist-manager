@@ -1,12 +1,18 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Box, Typography, Button, Container, Grid, Paper, Stack } from '@mui/material';
+import { styled } from '@mui/material/styles';
+import { useNavigate } from 'react-router-dom';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { Register } from '../auth/Register';
-import { useAuth } from '../auth/hooks/useAuth';
-import { useAppDispatch } from '../../store/store';
-import { setLoginDialogOpen } from '../../store/slices/uiSlice';
+import { useAppDispatch, useAppSelector } from '../../store/store';
+import { setRegisterDialogOpen } from '../../store/slices/uiSlice';
+
+const FeatureIcon = styled(CheckCircleIcon)(({ theme }) => ({
+  color: theme.palette.success.main,
+  marginRight: theme.spacing(1),
+}));
 
 /**
  * LandingPage component displays the main landing page for unauthenticated users
@@ -15,9 +21,17 @@ import { setLoginDialogOpen } from '../../store/slices/uiSlice';
  */
 const LandingPage: React.FC = () => {
   const videoRef = React.useRef<HTMLVideoElement>(null);
-  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
-  const { user } = useAuth();
+  const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const { user, authError } = useAppSelector((state) => state.auth);
+  const { isRegisterOpen } = useAppSelector((state) => state.ui.dialog);
+
+  // If user is logged in and there's no auth error, redirect to projects
+  React.useEffect(() => {
+    if (user && !authError) {
+      navigate('/projects');
+    }
+  }, [user, authError, navigate]);
 
   React.useEffect(() => {
     const video = videoRef.current;
@@ -30,6 +44,14 @@ const LandingPage: React.FC = () => {
       });
     }
   }, []);
+
+  const handleRegisterClick = () => {
+    dispatch(setRegisterDialogOpen(true));
+  };
+
+  const handleCloseRegister = () => {
+    dispatch(setRegisterDialogOpen(false));
+  };
 
   return (
     <Box sx={{ 
@@ -133,10 +155,10 @@ const LandingPage: React.FC = () => {
               Effortlessly manage, organize, and collaborate on your operational data with our intuitive worklist management solution.
               Say goodbye to spreadsheet chaos and hello to streamlined productivity.
             </Typography>
-            <Button 
-              variant="contained" 
+            <Button
+              variant="contained"
               size="large"
-              onClick={() => setIsRegisterOpen(true)}
+              onClick={handleRegisterClick}
               sx={{ 
                 px: 4,
                 py: 1.5,
@@ -194,14 +216,13 @@ const LandingPage: React.FC = () => {
               </Grid>
             </Grid>
           </Box>
-
-          {/* Register Dialog */}
-          <Register 
-            open={isRegisterOpen}
-            onClose={() => setIsRegisterOpen(false)}
-          />
         </Container>
       </Box>
+
+      <Register
+        open={isRegisterOpen}
+        onClose={handleCloseRegister}
+      />
     </Box>
   );
 };
