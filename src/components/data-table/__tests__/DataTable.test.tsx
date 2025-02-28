@@ -25,13 +25,13 @@ describe('DataTable', () => {
     isActive: {
       name: 'isActive',
       type: 'checkbox' as ColumnType,
-      label: 'Is Active',
-      helperText: 'Toggle active status'
+      headerName: 'Is Active',
+      description: 'Toggle active status'
     },
     status: {
       name: 'status',
       type: 'select' as ColumnType,
-      label: 'Status',
+      headerName: 'Status',
       options: ['Active', 'Inactive', 'Pending']
     }
   };
