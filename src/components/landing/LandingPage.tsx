@@ -218,6 +218,68 @@ const LandingPage: React.FC = () => {
               </Grid>
             </Grid>
           </Box>
+
+          {/* Testimonial Section */}
+          <Box sx={{ 
+            py: 8,
+            width: '100%',
+            bgcolor: 'rgba(245, 247, 250, 0.8)',
+            borderRadius: 2,
+            mt: 6,
+            mb: 6
+          }}>
+            <Container maxWidth="lg">
+              <Grid container spacing={4} alignItems="center">
+                <Grid item xs={12} md={6}>
+                  <Box
+                    component="img"
+                    src={process.env.PUBLIC_URL + '/assets/pictures/testimonial-1.jpg'}
+                    alt="Testimonial"
+                    sx={{
+                      width: '100%',
+                      height: 'auto',
+                      borderRadius: 2,
+                      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)'
+                    }}
+                  />
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <Box sx={{ pl: { md: 4 } }}>
+                    <Typography
+                      variant="h5"
+                      component="blockquote"
+                      sx={{
+                        fontStyle: 'italic',
+                        mb: 3,
+                        position: 'relative',
+                        '&::before': {
+                          content: '"\\201C"',
+                          fontSize: '4rem',
+                          color: 'primary.main',
+                          opacity: 0.3,
+                          position: 'absolute',
+                          top: '-2rem',
+                          left: '-1rem',
+                          lineHeight: 1
+                        }
+                      }}
+                    >
+                      OpsDriver has eliminated the need for unwieldy Google Sheets as we are testing new workflows in our business. It simplifies our process of workflow experimentation, helping us to discover the right actions before investing in a complicated solution.
+                    </Typography>
+                    <Typography
+                      variant="subtitle1"
+                      sx={{
+                        fontWeight: 600,
+                        color: 'text.primary'
+                      }}
+                    >
+                      - VP of Operations at a Fortune 500 healthcare company
+                    </Typography>
+                  </Box>
+                </Grid>
+              </Grid>
+            </Container>
+          </Box>
         </Container>
       </Box>
     </Box>
