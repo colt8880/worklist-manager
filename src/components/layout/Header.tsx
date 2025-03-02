@@ -45,7 +45,7 @@ export const Header: React.FC<HeaderProps> = ({
           }}
           onClick={onTitleClick}
         >
-          Worklist Manager
+          OpsDriver
         </Typography>
         {user ? (
           <>
