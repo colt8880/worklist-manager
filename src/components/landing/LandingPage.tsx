@@ -87,6 +87,17 @@ const LandingPage: React.FC = () => {
           loop
           muted
           playsInline
+          style={{
+            width: 'auto',
+            height: 'auto',
+            minWidth: '100%',
+            minHeight: '100%',
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%) scale(1.1)',
+            objectFit: 'cover'
+          }}
           onError={(e) => console.error('[Landing] Video playback error:', {
             error: e,
             src: e.currentTarget.src
