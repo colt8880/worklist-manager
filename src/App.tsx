@@ -6,8 +6,7 @@ import { PersistGate } from 'redux-persist/integration/react';
 import { store, persistor } from './store/store';
 import { AppProviders } from './providers/AppProviders';
 import { AppRoutes } from './routes/AppRoutes';
-import { AuthLayout } from './components/auth/AuthLayout';
-import { AuthenticatedLayout } from './components/layout/AuthenticatedLayout';
+import { Layout } from './components/layout/Layout';
 import { useAppSelector, useAppDispatch } from './store/store';
 import { logout, getCurrentSession } from './store/slices/authSlice';
 import { useLocationChangeEffect } from './hooks/useLocationChangeEffect';
@@ -44,30 +43,17 @@ const AppContent: React.FC = () => {
     navigate('/login');
   };
 
-  if (!user) {
-    return (
-      <AuthLayout
-        user={user}
-        authError={authError}
-        onLoginClick={handleLoginClick}
-        onLogout={() => dispatch(logout())}
-        onTitleClick={handleTitleClick}
-        onProjectsClick={handleProjectsClick}
-      >
-        <AppRoutes />
-      </AuthLayout>
-    );
-  }
-
   return (
-    <AuthenticatedLayout
+    <Layout
       user={user}
+      authError={authError}
+      onLoginClick={handleLoginClick}
       onLogout={() => dispatch(logout())}
       onTitleClick={handleTitleClick}
       onProjectsClick={handleProjectsClick}
     >
       <AppRoutes />
-    </AuthenticatedLayout>
+    </Layout>
   );
 };
 

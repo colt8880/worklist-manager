@@ -12,39 +12,32 @@ export const Footer: React.FC = () => {
     <Box
       component="footer"
       sx={{
-        py: 2,
         backgroundColor: (theme) => theme.palette.primary.main,
         borderTop: '1px solid rgba(255, 255, 255, 0.1)',
         width: '100vw',
         position: 'relative',
         left: '50%',
         right: '50%',
+        marginTop: '25px',
         marginLeft: '-50vw',
         marginRight: '-50vw',
-        marginBottom: '-50vw'
+        marginBottom: '-50vw',
+        py: 2
       }}
     >
-      <Box
+      <Typography
+        variant="body2"
         sx={{
-          maxWidth: 'lg',
-          width: '100%',
-          mx: 'auto',
-          px: { xs: 3, lg: 0 } // Remove horizontal padding on large screens
+          display: 'flex',
+          alignItems: 'left',
+          gap: 0.5,
+          color: 'rgba(255, 255, 255, 0.9)',
+          fontWeight: 500,
+          pl: 3
         }}
       >
-        <Typography
-          variant="body2"
-          sx={{
-            display: 'flex',
-            alignItems: 'left',
-            gap: 0.5,
-            color: 'rgba(255, 255, 255, 0.9)',
-            fontWeight: 500
-          }}
-        >
-          © OpsDriver 2025
-        </Typography>
-      </Box>
+        © OpsDriver 2025
+      </Typography>
     </Box>
   );
 }; 
