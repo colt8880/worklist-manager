@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Container } from '@mui/material';
 import { User } from '../../types/auth';
 import { Header } from '../layout/Header';
+import { Footer } from '../layout/Footer';
 import { RegistrationData } from '../../types/auth';
 
 interface AuthLayoutProps {
@@ -31,7 +32,11 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
   children
 }) => {
   return (
-    <>
+    <Box sx={{ 
+      display: 'flex',
+      flexDirection: 'column',
+      minHeight: '100vh'
+    }}>
       <Header 
         user={user} 
         onLogout={onLogout} 
@@ -39,11 +44,26 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
         onTitleClick={onTitleClick}
         onProjectsClick={onProjectsClick}
       />
-      <Container maxWidth="lg">
-        <Box sx={{ mt: 3 }}>
-          {children}
-        </Box>
-      </Container>
-    </>
+      <Box 
+        component="main"
+        sx={{ 
+          flex: '1 0 auto',
+          width: '100%',
+          position: 'relative'
+        }}
+      >
+        {children}
+      </Box>
+      <Box 
+        sx={{ 
+          flex: '0 0 auto',
+          width: '100%',
+          position: 'relative',
+          zIndex: 10
+        }}
+      >
+        <Footer />
+      </Box>
+    </Box>
   );
 }; 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Box } from '@mui/material';
 import { Header } from './Header';
+import { Footer } from './Footer';
 import { User } from '../../types/auth';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -30,7 +31,13 @@ export const Layout: React.FC<LayoutProps> = ({
   };
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <Box sx={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      minHeight: '100vh',
+      position: 'relative',
+      overflow: 'hidden'
+    }}>
       <Header 
         user={user} 
         onLogout={onLogout}
@@ -40,17 +47,29 @@ export const Layout: React.FC<LayoutProps> = ({
       <Box 
         component="main" 
         sx={{ 
-          flexGrow: 1,
+          flex: '1 0 auto',
+          width: '100%',
+          position: 'relative',
           ...(isLandingPage ? {
-            p: 0, // No padding for landing page
-            mt: 0  // No margin for landing page
+            p: 0,
+            mt: 0
           } : {
             p: 3,
-            mt: '64px' // Add margin-top equal to header height for other pages
+            mt: '64px'
           })
         }}
       >
         {children}
+      </Box>
+      <Box 
+        sx={{ 
+          flex: '0 0 auto',
+          width: '100%',
+          position: 'relative',
+          zIndex: 10
+        }}
+      >
+        <Footer />
       </Box>
     </Box>
   );

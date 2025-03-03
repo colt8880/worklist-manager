@@ -47,13 +47,13 @@ const LandingPage: React.FC = () => {
 
   return (
     <Box sx={{ 
-      position: 'relative', 
-      width: '100vw', 
-      left: '50%', 
-      right: '50%', 
-      marginLeft: '-50vw', 
+      width: '100vw',
+      position: 'relative',
+      left: '50%',
+      right: '50%',
+      marginLeft: '-50vw',
       marginRight: '-50vw',
-      ...(user && { mt: '-24px' }) // Compensate for Layout padding when logged in
+      overflow: 'hidden'
     }}>
       {/* Video Background */}
       <Box
@@ -62,9 +62,7 @@ const LandingPage: React.FC = () => {
           top: 0,
           left: 0,
           right: 0,
-          width: '100%',
-          height: '100%',
-          maxHeight: '600px',
+          height: '600px',
           overflow: 'hidden',
           zIndex: 0,
           bgcolor: 'background.default',
@@ -115,18 +113,18 @@ const LandingPage: React.FC = () => {
       </Box>
 
       <Box sx={{ position: 'relative', zIndex: 1 }}>
-        <Container maxWidth="lg">
-          {/* Hero Section */}
-          <Box sx={{ 
-            textAlign: 'center', 
-            height: '600px',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            mb: 0,
-            ...(user && { pt: '64px' }) // Add padding-top when logged in
-          }}>
+        {/* Hero Section */}
+        <Box sx={{ 
+          textAlign: 'center', 
+          height: '600px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          mb: 0,
+          ...(user && { pt: '64px' }) // Add padding-top when logged in
+        }}>
+          <Container maxWidth="lg">
             <Typography
               component="h1"
               variant="h2"
@@ -174,13 +172,16 @@ const LandingPage: React.FC = () => {
             >
               Get Started Free
             </Button>
-          </Box>
+          </Container>
+        </Box>
 
+        <Container maxWidth="lg">
           {/* Features Section - Now with white background */}
           <Box sx={{ 
             py: 5,
             width: '100%',
-            mt: 0
+            mt: 0,
+            mb: 0 // Ensure no bottom margin
           }}>
             <Grid container spacing={4}>
               <Grid item xs={12} md={4}>
@@ -226,7 +227,7 @@ const LandingPage: React.FC = () => {
             bgcolor: 'rgba(245, 247, 250, 0.8)',
             borderRadius: 2,
             mt: 6,
-            mb: 6
+            mb: 0 // Changed from mb: 6 to ensure no extra margin at bottom
           }}>
             <Container maxWidth="lg">
               <Grid container spacing={4} alignItems="center">
